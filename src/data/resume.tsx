@@ -90,8 +90,16 @@ export const DATA = {
   ],
   education: [
     {
+      school: "Indira Gandhi National Open University",
+      degree: "Master's Degree in Computer Applications and Computer Science",
+      start: "2023",
+      end: "2024",
+      href: "https://www.ignou.ac.in/",
+      logoUrl: "/ignou.png"
+    },
+    {
       school: "Usha Martin University",
-      degree: "Bachelor's Degree in Computer Science and Information Technology",
+      degree: "Bachelor's Degree in Computer Applications and Computer Science",
       start: "2018",
       end: "2021",
       href: "https://www.ushamartinuniversity.com/",
