@@ -59,7 +59,7 @@ export const DATA = {
       location: "Ranchi, India",
       title: "Software Engineer",
       start: "Jan 2024",
-      end: "Nov 2024",
+      end: "Jan 2025",
       description:
         "Reduced website load and big data upload time by 30% through stack optimization and Python RESTful API development. Implemented new features and conducted maintenance to ensure high project performance and reliability.",
       href: "",
