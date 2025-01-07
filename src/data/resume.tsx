@@ -28,7 +28,7 @@ export const DATA = {
     "Bootstrap",
     "WebSockets",
     "API Development",
-    "Mobile App Development",
+    "React Native",
   ],
   navbar: [
     { href: "/", icon: HomeIcon, label: "Home" },
