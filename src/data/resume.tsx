@@ -27,7 +27,6 @@ export const DATA = {
     "Tailwind CSS",
     "Bootstrap",
     "WebSockets",
-    "Payment Gateway Integration",
     "API Development",
     "Mobile App Development",
   ],
