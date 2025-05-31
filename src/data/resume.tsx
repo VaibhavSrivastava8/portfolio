@@ -54,33 +54,22 @@ export const DATA = {
   },
   work: [
     {
-      company: "Raneso",
-      location: "Ranchi, India",
-      title: "Software Engineer",
-      start: "Jan 2024",
-      end: "Jan 2025",
+      company: "Techborn IT Solutions",
+      location: "Bangalore, India",
+      title: "SDE",
+      start: "Mar 2022",
+      end: "Feb 2025",
       description:
-        "Reduced website load and big data upload time by 30% through stack optimization and Python RESTful API development. Implemented new features and conducted maintenance to ensure high project performance and reliability.",
+        "Developed and maintained full-stack web applications using PHP (Laravel/Yii/Blade) and React.js, integrating RESTful APIs and ensuring seamless frontend-backend communication.Built scalable backend services in Node.js and Express, later transitioning to Nest.js for modular architecture, resulting in improved code reuse and testability.",
       href: "",
-      logoUrl: "/raneso.png"
-    },
-    {
-      company: "366Pi Technologies",
-      location: "Ranchi, Jharkhand",
-      title: "Frontend Developer",
-      start: "Dec 2022",
-      end: "Jul 2023",
-      description:
-        "Maintained and enhanced the frontend of the company’s website, ensuring a seamless user experience. Collaborated with team members to develop new features and resolve bugs to improve functionality.",
-      href: "",
-      logoUrl: "/pitech.png"
+      logoUrl: ""
     },
     {
       company: "STC ACORP JV",
       location: "Maharashtra, India",
       title: "Network Engineer",
       start: "Aug 2021",
-      end: "Nov 2022",
+      end: "Jan 2022",
       description:
         "Participated in network design and implementation projects, contributing to upgrades and expansions. Provided user support by resolving connectivity issues and answering network-related queries.",
       href: "",
@@ -88,14 +77,6 @@ export const DATA = {
     },
   ],
   education: [
-    {
-      school: "Indira Gandhi National Open University",
-      degree: "Master's Degree in Computer Applications and Computer Science",
-      start: "2023",
-      end: "2024",
-      href: "https://www.ignou.ac.in/",
-      logoUrl: "/ignou.png"
-    },
     {
       school: "Usha Martin University",
       degree: "Bachelor's Degree in Computer Applications and Computer Science",
