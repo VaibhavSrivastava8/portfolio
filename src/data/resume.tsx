@@ -19,7 +19,6 @@ export const DATA = {
     "React.js",
     "Node.js",
     "Next.js",
-    "Django",
     "FastAPI",
     "MySQL",
     "HTML",
