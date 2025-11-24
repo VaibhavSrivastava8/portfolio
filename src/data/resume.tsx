@@ -54,11 +54,22 @@ export const DATA = {
   },
   work: [
     {
+      company: "Jaiinfoway",
+      location: "Ranchi, India",
+      title: "SDE",
+      start: "October 2025",
+      end: "Present",
+      description:
+        "Building AI-driven applications using LangChain, RAG, MCP, and Strands Agents.Creating Node.js microservices & integrating LLM workflows and automating workflows with custom agent pipelines.",
+      href: "",
+      logoUrl: ""
+    },
+    {
       company: "Techborn IT Solutions",
       location: "Bangalore, India",
       title: "SDE",
       start: "Mar 2022",
-      end: "Feb 2025",
+      end: "May 2025",
       description:
         "Developed and maintained full-stack web applications using PHP (Laravel/Yii/Blade) and React.js, integrating RESTful APIs and ensuring seamless frontend-backend communication.Built scalable backend services in Node.js and Express, later transitioning to Nest.js for modular architecture, resulting in improved code reuse and testability.",
       href: "",
