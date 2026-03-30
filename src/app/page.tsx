@@ -44,16 +44,20 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
 
   useEffect(() => {
     let i = 0;
+    let cleared = false;
     const interval = setInterval(() => {
+      if (cleared) return;
       if (i < bootLines.length) {
-        setLines(prev => [...prev, bootLines[i]]);
+        const line = bootLines[i];
         i++;
+        setLines(prev => [...prev, line]);
       } else {
+        cleared = true;
         clearInterval(interval);
         setTimeout(() => { setDone(true); setTimeout(onComplete, 500); }, 600);
       }
     }, 200);
-    return () => clearInterval(interval);
+    return () => { cleared = true; clearInterval(interval); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -70,7 +74,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.15 }}
-            className={line.includes("WELCOME") ? "neon-text mt-4 text-lg font-bold" : "text-[hsl(var(--muted-foreground))]"}
+            className={line && line.includes("WELCOME") ? "neon-text mt-4 text-lg font-bold" : "text-[hsl(var(--muted-foreground))]"}
           >
             {line}
           </motion.div>
