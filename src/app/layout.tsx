@@ -1,6 +1,4 @@
 import Navbar from "@/components/navbar";
-import SceneLoader from "@/components/scene/SceneLoader";
-import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
 import { cn } from "@/lib/utils";
@@ -55,20 +53,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased max-w-2xl mx-auto py-12 sm:py-24 px-6 animated-gradient-bg grid-pattern relative",
+          "min-h-screen bg-background font-sans antialiased max-w-2xl mx-auto py-12 sm:py-24 px-6 scanlines",
           fontSans.variable
         )}
       >
-        <SceneLoader />
-        <ThemeProvider attribute="class" defaultTheme="dark">
-          <TooltipProvider delayDuration={0}>
-            {children}
-            <Navbar />
-          </TooltipProvider>
-        </ThemeProvider>
+        <TooltipProvider delayDuration={0}>
+          {children}
+          <Navbar />
+        </TooltipProvider>
       </body>
     </html>
   );
