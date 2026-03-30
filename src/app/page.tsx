@@ -7,29 +7,46 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// ===== CUSTOM CURSOR =====
+// ===== CUSTOM CURSOR (RAF-based for zero lag) =====
 function CustomCursor() {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const [dotPos, setDotPos] = useState({ x: 0, y: 0 });
-  const [visible, setVisible] = useState(false);
+  const ringRef = useRef<HTMLDivElement>(null);
+  const dotRef = useRef<HTMLDivElement>(null);
+  const mouse = useRef({ x: 0, y: 0 });
+  const ringPos = useRef({ x: 0, y: 0 });
   const [isTouch, setIsTouch] = useState(false);
 
   useEffect(() => {
-    if ('ontouchstart' in window) {
-      setIsTouch(true);
-      return;
-    }
-    const move = (e: MouseEvent) => {
-      setPos({ x: e.clientX, y: e.clientY });
-      setDotPos({ x: e.clientX, y: e.clientY });
-      setVisible(true);
+    if ('ontouchstart' in window) { setIsTouch(true); return; }
+
+    const onMove = (e: MouseEvent) => { mouse.current = { x: e.clientX, y: e.clientY }; };
+    const onLeave = () => { if (ringRef.current) ringRef.current.style.opacity = '0'; if (dotRef.current) dotRef.current.style.opacity = '0'; };
+    const onEnter = () => { if (ringRef.current) ringRef.current.style.opacity = '1'; if (dotRef.current) dotRef.current.style.opacity = '1'; };
+
+    window.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseleave", onLeave);
+    document.addEventListener("mouseenter", onEnter);
+
+    let raf: number;
+    const animate = () => {
+      // Lerp ring toward mouse (smooth follow)
+      ringPos.current.x += (mouse.current.x - ringPos.current.x) * 0.15;
+      ringPos.current.y += (mouse.current.y - ringPos.current.y) * 0.15;
+      if (ringRef.current) {
+        ringRef.current.style.transform = `translate(${ringPos.current.x - 10}px, ${ringPos.current.y - 10}px)`;
+      }
+      // Dot snaps instantly
+      if (dotRef.current) {
+        dotRef.current.style.transform = `translate(${mouse.current.x - 2}px, ${mouse.current.y - 2}px)`;
+      }
+      raf = requestAnimationFrame(animate);
     };
-    const leave = () => setVisible(false);
-    window.addEventListener("mousemove", move);
-    document.addEventListener("mouseleave", leave);
+    raf = requestAnimationFrame(animate);
+
     return () => {
-      window.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseleave", leave);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseleave", onLeave);
+      document.removeEventListener("mouseenter", onEnter);
     };
   }, []);
 
@@ -37,16 +54,8 @@ function CustomCursor() {
 
   return (
     <>
-      <motion.div
-        className="custom-cursor"
-        animate={{ x: pos.x - 10, y: pos.y - 10, opacity: visible ? 1 : 0 }}
-        transition={{ type: "spring", stiffness: 500, damping: 28, mass: 0.5 }}
-      />
-      <motion.div
-        className="cursor-dot"
-        animate={{ x: dotPos.x - 2, y: dotPos.y - 2, opacity: visible ? 1 : 0 }}
-        transition={{ type: "spring", stiffness: 2000, damping: 50 }}
-      />
+      <div ref={ringRef} className="custom-cursor" />
+      <div ref={dotRef} className="cursor-dot" />
     </>
   );
 }
@@ -107,32 +116,41 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
   const [done, setDone] = useState(false);
   const [progress, setProgress] = useState(0);
   const bootLines = [
-    "> INITIALIZING SYSTEM...",
-    "> LOADING NEURAL CORES... OK",
-    "> CONNECTING TO LLM NETWORK... OK",
-    "> MOUNTING AI AGENTS... OK",
-    "> LOADING PROFILE: VAIBHAV SRIVASTAVA",
-    "> STATUS: ONLINE",
-    "> WELCOME.",
+    { text: "> INITIALIZING SYSTEM...", delay: 400 },
+    { text: "> LOADING NEURAL CORES............ OK", delay: 600 },
+    { text: "> ESTABLISHING SECURE CONNECTION.. OK", delay: 500 },
+    { text: "> MOUNTING AI AGENTS.............. OK", delay: 700 },
+    { text: "> SCANNING KNOWLEDGE BASE......... OK", delay: 500 },
+    { text: "> COMPILING PORTFOLIO DATA........ OK", delay: 400 },
+    { text: "> RENDERING INTERFACE............. OK", delay: 600 },
+    { text: "> LOADING PROFILE: VAIBHAV SRIVASTAVA", delay: 500 },
+    { text: "> STATUS: ALL SYSTEMS OPERATIONAL", delay: 400 },
+    { text: "", delay: 300 },
+    { text: "  WELCOME TO THE GRID.", delay: 0 },
   ];
 
   useEffect(() => {
     let i = 0;
-    let cleared = false;
-    const interval = setInterval(() => {
-      if (cleared) return;
-      if (i < bootLines.length) {
-        const line = bootLines[i];
-        i++;
-        setLines(prev => [...prev, line]);
-        setProgress(Math.round((i / bootLines.length) * 100));
-      } else {
-        cleared = true;
-        clearInterval(interval);
-        setTimeout(() => { setDone(true); setTimeout(onComplete, 500); }, 600);
+    let cancelled = false;
+
+    const showNext = () => {
+      if (cancelled || i >= bootLines.length) {
+        if (!cancelled) {
+          setProgress(100);
+          setTimeout(() => { setDone(true); setTimeout(onComplete, 600); }, 800);
+        }
+        return;
       }
-    }, 200);
-    return () => { cleared = true; clearInterval(interval); };
+      const entry = bootLines[i];
+      i++;
+      setLines(prev => [...prev, entry.text]);
+      setProgress(Math.round((i / bootLines.length) * 100));
+      setTimeout(showNext, entry.delay);
+    };
+
+    // Small initial pause so the screen is visible
+    setTimeout(showNext, 500);
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -140,31 +158,44 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
     <motion.div
       className="fixed inset-0 z-[100] bg-[hsl(220,15%,3%)] flex items-center justify-center"
       animate={done ? { opacity: 0 } : { opacity: 1 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.6 }}
     >
       <div className="font-mono text-sm max-w-lg w-full px-8">
+        <div className="mb-6">
+          <span className="text-[10px] tracking-[0.3em] text-[hsl(var(--muted-foreground))]/50">VAIBHAV SRIVASTAVA // PORTFOLIO v2.0</span>
+        </div>
         {lines.map((line, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.15 }}
-            className={line && line.includes("WELCOME") ? "neon-text mt-4 text-lg font-bold" : "text-[hsl(var(--muted-foreground))]"}
+            transition={{ duration: 0.1 }}
+            className={
+              line && line.includes("WELCOME") ? "neon-text text-lg font-bold" :
+              line && line.includes("STATUS") ? "text-[var(--neon-cyan)] mt-2" :
+              "text-[hsl(var(--muted-foreground))]"
+            }
           >
             {line}
           </motion.div>
         ))}
-        <motion.span
-          className="inline-block w-2 h-4 bg-[var(--neon-cyan)] cursor-blink mt-1"
-          animate={{ opacity: [1, 0] }}
-          transition={{ duration: 0.8, repeat: Infinity }}
-        />
+        {!done && (
+          <motion.span
+            className="inline-block w-2 h-4 bg-[var(--neon-cyan)] cursor-blink mt-1"
+            animate={{ opacity: [1, 0] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+          />
+        )}
         {/* Boot progress bar */}
-        <div className="boot-progress-track">
-          <div className="boot-progress-fill" style={{ width: `${progress}%` }} />
+        <div className="mt-8 boot-progress-track">
+          <motion.div
+            className="boot-progress-fill"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          />
         </div>
         <div className="flex justify-between mt-1">
-          <span className="text-[10px] text-[hsl(var(--muted-foreground))]/50 font-mono">LOADING</span>
+          <span className="text-[10px] text-[hsl(var(--muted-foreground))]/50 font-mono">LOADING SYSTEMS</span>
           <span className="text-[10px] font-mono" style={{ color: 'var(--neon-cyan)' }}>{progress}%</span>
         </div>
       </div>
@@ -277,22 +308,64 @@ function AnimatedCounter({ value, suffix = "", duration = 1.5 }: { value: number
   return <span ref={ref}>{count}{suffix}</span>;
 }
 
-// ===== STAT CARD (RPG style) =====
-function StatCard({ label, value, icon, numericValue, numericSuffix }: { label: string; value: string; icon: string; numericValue?: number; numericSuffix?: string }) {
+// ===== SYSTEM STATUS PANEL (replaces emoji stat cards) =====
+function SystemStatus() {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (isInView) {
+      const t = setTimeout(() => setVisible(true), 200);
+      return () => clearTimeout(t);
+    }
+  }, [isInView]);
+
+  const entries = [
+    { key: "EXPERIENCE", val: "4+ years", color: "var(--neon-cyan)" },
+    { key: "PROJECTS", val: `${DATA.projects.length} deployed`, color: "var(--neon-purple)" },
+    { key: "TECH_STACK", val: `${DATA.skills.length} tools`, color: "var(--neon-blue)" },
+    { key: "ROLE", val: "IT Head", color: "var(--neon-pink)" },
+    { key: "LOCATION", val: "Ranchi, India", color: "var(--neon-cyan)" },
+    { key: "STATUS", val: "Available for work", color: "#22c55e" },
+  ];
+
   return (
-    <motion.div
-      className="neon-border rounded-lg p-4 bg-[hsl(var(--card))] hud-corners"
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 400, damping: 20 }}
-    >
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className="text-2xl font-bold neon-text-subtle" style={{color: 'var(--neon-cyan)'}}>
-        {numericValue !== undefined ? (
-          <AnimatedCounter value={numericValue} suffix={numericSuffix || ""} />
-        ) : value}
+    <div ref={ref} className="neon-border rounded-lg bg-[hsl(var(--card))] overflow-hidden hud-corners">
+      {/* Terminal header */}
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-[hsl(var(--border))]">
+        <div className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/70" />
+        <div className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+        <span className="text-[10px] font-mono text-[hsl(var(--muted-foreground))]/50 ml-2">system_status.sh</span>
       </div>
-      <div className="text-xs text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider">{label}</div>
-    </motion.div>
+      {/* Terminal body */}
+      <div className="p-4 font-mono text-xs space-y-1">
+        <div className="text-[hsl(var(--muted-foreground))]/50 mb-2">$ cat /sys/profile/status</div>
+        {entries.map((e, i) => (
+          <motion.div
+            key={e.key}
+            initial={{ opacity: 0, x: -10 }}
+            animate={visible ? { opacity: 1, x: 0 } : {}}
+            transition={{ delay: i * 0.08, duration: 0.2 }}
+            className="flex gap-2"
+          >
+            <span className="text-[hsl(var(--muted-foreground))]/40 select-none">&gt;</span>
+            <span className="text-[hsl(var(--muted-foreground))]">{e.key}:</span>
+            <span style={{ color: e.color }} className="neon-text-subtle">{e.val}</span>
+          </motion.div>
+        ))}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={visible ? { opacity: 1 } : {}}
+          transition={{ delay: 0.6 }}
+          className="mt-2 flex items-center gap-1"
+        >
+          <span className="text-[hsl(var(--muted-foreground))]/40">$</span>
+          <span className="inline-block w-[6px] h-3 bg-[var(--neon-cyan)] cursor-blink" />
+        </motion.div>
+      </div>
+    </div>
   );
 }
 
@@ -618,17 +691,14 @@ export default function Page() {
                   </motion.div>
                 </div>
 
-                {/* Stats row */}
+                {/* System Status Terminal */}
                 <motion.div
-                  className="grid grid-cols-4 gap-3 pt-2"
+                  className="pt-2"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 }}
                 >
-                  <StatCard icon="&#x1f9e0;" label="Experience" value="4+ YRS" numericValue={4} numericSuffix="+ YRS" />
-                  <StatCard icon="&#x1f680;" label="Projects" value={`${DATA.projects.length}+`} numericValue={DATA.projects.length} numericSuffix="+" />
-                  <StatCard icon="&#x2699;&#xfe0f;" label="Tech Stack" value={`${DATA.skills.length}+`} numericValue={DATA.skills.length} numericSuffix="+" />
-                  <StatCard icon="&#x1f3af;" label="Current Role" value="IT HEAD" />
+                  <SystemStatus />
                 </motion.div>
               </motion.div>
             </div>

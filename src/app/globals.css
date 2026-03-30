@@ -50,23 +50,28 @@
 /* ===== CUSTOM CURSOR ===== */
 .custom-cursor {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 20px;
   height: 20px;
   border: 1px solid var(--neon-cyan);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
-  transition: transform 0.1s ease, opacity 0.3s ease;
+  will-change: transform;
   mix-blend-mode: difference;
 }
 .cursor-dot {
   position: fixed;
+  top: 0;
+  left: 0;
   width: 4px;
   height: 4px;
   background: var(--neon-cyan);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
+  will-change: transform;
   box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
 }
 
