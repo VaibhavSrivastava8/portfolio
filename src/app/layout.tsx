@@ -1,4 +1,5 @@
 import Navbar from "@/components/navbar";
+import SceneLoader from "@/components/scene/SceneLoader";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DATA } from "@/data/resume";
@@ -61,6 +62,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
+        <SceneLoader />
         <ThemeProvider attribute="class" defaultTheme="dark">
           <TooltipProvider delayDuration={0}>
             {children}

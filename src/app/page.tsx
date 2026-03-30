@@ -15,48 +15,6 @@ import Markdown from "react-markdown";
 
 const BLUR_FADE_DELAY = 0.04;
 
-// Floating particles background for the hero section
-function FloatingParticles() {
-  const [particles, setParticles] = useState<
-    Array<{ id: number; x: number; y: number; size: number; delay: number; duration: number }>
-  >([]);
-
-  useEffect(() => {
-    const generated = Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 3 + 1,
-      delay: Math.random() * 5,
-      duration: Math.random() * 10 + 8,
-    }));
-    setParticles(generated);
-  }, []);
-
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          className="particle-dot"
-          style={{ left: `${p.x}%`, top: `${p.y}%`, width: p.size, height: p.size }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, 15, 0],
-            opacity: [0.2, 0.6, 0.2],
-          }}
-          transition={{
-            duration: p.duration,
-            delay: p.delay,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
 // Animated section wrapper with scroll-triggered entrance
 function AnimatedSection({
   children,
@@ -128,7 +86,6 @@ export default function Page() {
     <main className="flex flex-col min-h-[100dvh] space-y-10 relative z-10">
       {/* Hero Section */}
       <section id="hero" className="relative">
-        <FloatingParticles />
         <div className="mx-auto w-full max-w-2xl space-y-8 relative z-10">
           <div className="gap-2 flex justify-between">
             <div className="flex-col flex flex-1 space-y-1.5">
