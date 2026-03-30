@@ -73,7 +73,7 @@ export const DATA = {
       location: "Ranchi, India",
       title: "Software Development Engineer",
       start: "Oct 2025",
-      end: "Dec 2025",
+      end: "Feb 2026",
       description:
         "Built AI-driven applications using LangChain, RAG, MCP, and Strands Agents. Created Node.js microservices, integrated LLM workflows, and automated pipelines with custom agent architectures.",
       href: "",
@@ -180,6 +180,50 @@ export const DATA = {
         "Swift",
       ],
       image: "/smart.png",
+    },
+    {
+      title: "TrustVault — KYC AI Service",
+      href: "https://github.com/VaibhavJeet/kyc-ai-service",
+      description:
+        "AI-powered identity verification platform with face recognition (ArcFace), liveness detection, document OCR via Tesseract, and trust scoring engine. Multi-tenant architecture with webhook support and Docker deployment.",
+      technologies: [
+        "Python",
+        "FastAPI",
+        "InsightFace",
+        "Tesseract OCR",
+        "Docker",
+        "PostgreSQL",
+      ],
+      image: "",
+    },
+    {
+      title: "Contract Analysis Agent",
+      href: "https://github.com/VaibhavJeet/contract-analysis-agent",
+      description:
+        "AI-powered legal document analysis with clause extraction, risk identification, compliance checking, and amendment drafting. Built with LangChain agent workflows and MCP tool integrations.",
+      technologies: [
+        "Python",
+        "LangChain",
+        "MCP",
+        "Next.js",
+        "ChromaDB",
+        "FastAPI",
+      ],
+      image: "",
+    },
+    {
+      title: "SkySea Holidays",
+      href: "https://skyseaholidays.co.uk/",
+      description:
+        "Complete holiday package booking platform with Laravel backend, React.js frontend, payment gateway integrations, and supplier API connections. Admin panel for package management and booking operations.",
+      technologies: [
+        "Laravel",
+        "React.js",
+        "Tailwind CSS",
+        "MySQL",
+        "Payment APIs",
+      ],
+      image: "/sky.png",
     },
   ],
   certifications: [
