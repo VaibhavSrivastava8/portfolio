@@ -2,18 +2,85 @@
 
 import { Badge } from "@/components/ui/badge";
 import { DATA } from "@/data/resume";
-import { AnimatePresence, motion, useInView } from "framer-motion";
+import { AnimatePresence, motion, useInView, useScroll, useSpring } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-// ===== STAR FIELD BACKGROUND =====
+// ===== CUSTOM CURSOR =====
+function CustomCursor() {
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [dotPos, setDotPos] = useState({ x: 0, y: 0 });
+  const [visible, setVisible] = useState(false);
+  const [isTouch, setIsTouch] = useState(false);
+
+  useEffect(() => {
+    if ('ontouchstart' in window) {
+      setIsTouch(true);
+      return;
+    }
+    const move = (e: MouseEvent) => {
+      setPos({ x: e.clientX, y: e.clientY });
+      setDotPos({ x: e.clientX, y: e.clientY });
+      setVisible(true);
+    };
+    const leave = () => setVisible(false);
+    window.addEventListener("mousemove", move);
+    document.addEventListener("mouseleave", leave);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseleave", leave);
+    };
+  }, []);
+
+  if (isTouch) return null;
+
+  return (
+    <>
+      <motion.div
+        className="custom-cursor"
+        animate={{ x: pos.x - 10, y: pos.y - 10, opacity: visible ? 1 : 0 }}
+        transition={{ type: "spring", stiffness: 500, damping: 28, mass: 0.5 }}
+      />
+      <motion.div
+        className="cursor-dot"
+        animate={{ x: dotPos.x - 2, y: dotPos.y - 2, opacity: visible ? 1 : 0 }}
+        transition={{ type: "spring", stiffness: 2000, damping: 50 }}
+      />
+    </>
+  );
+}
+
+// ===== SCROLL PROGRESS INDICATOR =====
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const pct = scrollHeight > 0 ? (scrollTop / scrollHeight) * 100 : 0;
+      setProgress(pct);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return <div className="scroll-progress" style={{ width: `${progress}%` }} />;
+}
+
+// ===== STAR FIELD BACKGROUND WITH METEORS =====
 function StarField() {
   const [stars, setStars] = useState<Array<{id:number;x:number;y:number;delay:number;duration:number;opacity:number}>>([]);
+  const [meteors, setMeteors] = useState<Array<{id:number;x:number;y:number;delay:number;duration:number}>>([]);
   useEffect(() => {
     setStars(Array.from({length:80},(_,i)=>({
       id:i, x:Math.random()*100, y:Math.random()*100,
       delay:Math.random()*5, duration:Math.random()*4+2, opacity:Math.random()*0.6+0.2
+    })));
+    setMeteors(Array.from({length:4},(_,i)=>({
+      id:i, x:Math.random()*80+10, y:Math.random()*30,
+      delay:Math.random()*12+i*5, duration:Math.random()*4+8
     })));
   },[]);
   return (
@@ -24,6 +91,12 @@ function StarField() {
           '--delay':`${s.delay}s`, '--duration':`${s.duration}s`, '--max-opacity':s.opacity
         } as React.CSSProperties} />
       ))}
+      {meteors.map(m=>(
+        <div key={`meteor-${m.id}`} className="meteor" style={{
+          left:`${m.x}%`, top:`${m.y}%`,
+          '--delay':`${m.delay}s`, '--duration':`${m.duration}s`
+        } as React.CSSProperties} />
+      ))}
     </div>
   );
 }
@@ -32,6 +105,7 @@ function StarField() {
 function BootSequence({ onComplete }: { onComplete: () => void }) {
   const [lines, setLines] = useState<string[]>([]);
   const [done, setDone] = useState(false);
+  const [progress, setProgress] = useState(0);
   const bootLines = [
     "> INITIALIZING SYSTEM...",
     "> LOADING NEURAL CORES... OK",
@@ -51,6 +125,7 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
         const line = bootLines[i];
         i++;
         setLines(prev => [...prev, line]);
+        setProgress(Math.round((i / bootLines.length) * 100));
       } else {
         cleared = true;
         clearInterval(interval);
@@ -84,6 +159,14 @@ function BootSequence({ onComplete }: { onComplete: () => void }) {
           animate={{ opacity: [1, 0] }}
           transition={{ duration: 0.8, repeat: Infinity }}
         />
+        {/* Boot progress bar */}
+        <div className="boot-progress-track">
+          <div className="boot-progress-fill" style={{ width: `${progress}%` }} />
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-[10px] text-[hsl(var(--muted-foreground))]/50 font-mono">LOADING</span>
+          <span className="text-[10px] font-mono" style={{ color: 'var(--neon-cyan)' }}>{progress}%</span>
+        </div>
       </div>
     </motion.div>
   );
@@ -119,6 +202,25 @@ function SectionHeader({ label, title }: { label: string; title: string }) {
   );
 }
 
+// ===== GLITCH TEXT =====
+function GlitchText({ text, className }: { text: string; className?: string }) {
+  const [glitching, setGlitching] = useState(false);
+  return (
+    <span
+      className={`relative inline-block ${className || ""}`}
+      onMouseEnter={() => { setGlitching(true); setTimeout(() => setGlitching(false), 300); }}
+    >
+      <span className={glitching ? "glitch-active" : ""}>{text}</span>
+      {glitching && (
+        <>
+          <span className="absolute inset-0 text-red-500/50 animate-glitch-1" aria-hidden="true">{text}</span>
+          <span className="absolute inset-0 text-blue-500/50 animate-glitch-2" aria-hidden="true">{text}</span>
+        </>
+      )}
+    </span>
+  );
+}
+
 // ===== TYPING TEXT =====
 function TypeWriter({ text, className, speed = 30 }: { text: string; className?: string; speed?: number }) {
   const [displayed, setDisplayed] = useState("");
@@ -146,8 +248,37 @@ function TypeWriter({ text, className, speed = 30 }: { text: string; className?:
   );
 }
 
+// ===== ANIMATED COUNTER =====
+function AnimatedCounter({ value, suffix = "", duration = 1.5 }: { value: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true });
+  const [started, setStarted] = useState(false);
+
+  useEffect(() => {
+    if (isInView && !started) {
+      setStarted(true);
+      const startTime = Date.now();
+      const durationMs = duration * 1000;
+      const animate = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / durationMs, 1);
+        // Ease out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setCount(Math.round(eased * value));
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        }
+      };
+      requestAnimationFrame(animate);
+    }
+  }, [isInView, value, started, duration]);
+
+  return <span ref={ref}>{count}{suffix}</span>;
+}
+
 // ===== STAT CARD (RPG style) =====
-function StatCard({ label, value, icon }: { label: string; value: string; icon: string }) {
+function StatCard({ label, value, icon, numericValue, numericSuffix }: { label: string; value: string; icon: string; numericValue?: number; numericSuffix?: string }) {
   return (
     <motion.div
       className="neon-border rounded-lg p-4 bg-[hsl(var(--card))] hud-corners"
@@ -155,9 +286,42 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
       transition={{ type: "spring", stiffness: 400, damping: 20 }}
     >
       <div className="text-2xl mb-1">{icon}</div>
-      <div className="text-2xl font-bold neon-text-subtle" style={{color: 'var(--neon-cyan)'}}>{value}</div>
+      <div className="text-2xl font-bold neon-text-subtle" style={{color: 'var(--neon-cyan)'}}>
+        {numericValue !== undefined ? (
+          <AnimatedCounter value={numericValue} suffix={numericSuffix || ""} />
+        ) : value}
+      </div>
       <div className="text-xs text-[hsl(var(--muted-foreground))] font-mono uppercase tracking-wider">{label}</div>
     </motion.div>
+  );
+}
+
+// ===== RADAR COMPONENT =====
+function Radar() {
+  const blips = [
+    { x: 30, y: 25, label: "AI" },
+    { x: 70, y: 35, label: "Backend" },
+    { x: 45, y: 70, label: "Frontend" },
+    { x: 75, y: 65, label: "Infra" },
+  ];
+  return (
+    <div className="radar flex-shrink-0">
+      {/* Concentric rings */}
+      <div className="radar-ring" style={{ width: '80%', height: '80%', top: '10%', left: '10%' }} />
+      <div className="radar-ring" style={{ width: '50%', height: '50%', top: '25%', left: '25%' }} />
+      {/* Crosshairs */}
+      <div className="absolute top-0 bottom-0 left-1/2 w-px bg-[rgba(0,255,204,0.08)]" />
+      <div className="absolute left-0 right-0 top-1/2 h-px bg-[rgba(0,255,204,0.08)]" />
+      {/* Blips */}
+      {blips.map((b, i) => (
+        <div
+          key={i}
+          className="radar-blip"
+          style={{ left: `${b.x}%`, top: `${b.y}%`, animationDelay: `${i * 1}s` }}
+          title={b.label}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -173,7 +337,7 @@ function MissionCard({ project, index }: { project: typeof DATA.projects[number]
     >
       <Link href={project.href} target={project.href.startsWith("http") ? "_blank" : undefined}>
         <motion.div
-          className="neon-border rounded-lg overflow-hidden bg-[hsl(var(--card))] card-hover cursor-pointer group"
+          className="neon-border rounded-lg overflow-hidden bg-[hsl(var(--card))] card-hover cursor-none group"
           onHoverStart={() => setHovered(true)}
           onHoverEnd={() => setHovered(false)}
           whileHover={{ scale: 1.01 }}
@@ -210,6 +374,69 @@ function MissionCard({ project, index }: { project: typeof DATA.projects[number]
             </div>
           </div>
         </motion.div>
+      </Link>
+    </motion.div>
+  );
+}
+
+// ===== FEATURED PROJECT CARD =====
+function FeaturedMissionCard({ project }: { project: typeof DATA.projects[number] }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.6 }}
+      className="sm:col-span-2"
+    >
+      <Link href={project.href} target={project.href.startsWith("http") ? "_blank" : undefined}>
+        <div className="featured-border rounded-lg">
+          <motion.div
+            className="neon-border rounded-lg overflow-hidden bg-[hsl(var(--card))] card-hover cursor-none group"
+            onHoverStart={() => setHovered(true)}
+            onHoverEnd={() => setHovered(false)}
+            whileHover={{ scale: 1.005 }}
+          >
+            {project.image && (
+              <div className="relative h-64 overflow-hidden">
+                <Image src={project.image} alt={project.title} fill className="object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--card))] via-transparent to-transparent" />
+                <motion.div
+                  className="absolute top-3 right-3 font-mono text-xs px-2 py-1 rounded bg-black/60 border border-[var(--neon-cyan)]/30"
+                  style={{ color: 'var(--neon-cyan)' }}
+                  animate={hovered ? { opacity: 1 } : { opacity: 0.7 }}
+                >
+                  MISSION #01
+                </motion.div>
+                <div className="absolute top-3 left-3 font-mono text-[10px] px-3 py-1 rounded featured-badge border border-[var(--neon-cyan)]/50 text-[var(--neon-cyan)] uppercase tracking-widest font-bold">
+                  Featured
+                </div>
+              </div>
+            )}
+            {!project.image && (
+              <div className="h-32 flex items-center justify-center border-b border-[hsl(var(--border))] relative">
+                <span className="font-mono text-xs" style={{color: 'var(--neon-cyan)', opacity: 0.5}}>
+                  [ MISSION #01 ]
+                </span>
+                <div className="absolute top-3 left-3 font-mono text-[10px] px-3 py-1 rounded featured-badge border border-[var(--neon-cyan)]/50 text-[var(--neon-cyan)] uppercase tracking-widest font-bold">
+                  Featured
+                </div>
+              </div>
+            )}
+            <div className="p-5">
+              <h3 className="font-bold text-lg mb-2 group-hover:text-[var(--neon-cyan)] transition-colors">{project.title}</h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed mb-4">{project.description}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {project.technologies.map(tech => (
+                  <span key={tech} className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] group-hover:border-[var(--neon-cyan)]/30 group-hover:text-[var(--neon-cyan)]/70 transition-colors">
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </Link>
     </motion.div>
   );
@@ -321,11 +548,13 @@ export default function Page() {
   };
 
   return (
-    <>
+    <div className="noise-overlay">
       <AnimatePresence>
         {!booted && <BootSequence onComplete={handleBootComplete} />}
       </AnimatePresence>
 
+      <CustomCursor />
+      <ScrollProgress />
       <StarField />
       <div className="grid-floor" />
 
@@ -364,7 +593,7 @@ export default function Page() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.4, duration: 0.6 }}
                     >
-                      <span className="neon-text">{DATA.name.split(" ")[0]}</span>{" "}
+                      <GlitchText text={DATA.name.split(" ")[0]} className="neon-text" />{" "}
                       <span className="text-foreground">{DATA.name.split(" ")[1]}</span>
                     </motion.h1>
                     <motion.div
@@ -396,9 +625,9 @@ export default function Page() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 }}
                 >
-                  <StatCard icon="&#x1f9e0;" label="Experience" value="4+ YRS" />
-                  <StatCard icon="&#x1f680;" label="Projects" value={`${DATA.projects.length}+`} />
-                  <StatCard icon="&#x2699;&#xfe0f;" label="Tech Stack" value={`${DATA.skills.length}+`} />
+                  <StatCard icon="&#x1f9e0;" label="Experience" value="4+ YRS" numericValue={4} numericSuffix="+ YRS" />
+                  <StatCard icon="&#x1f680;" label="Projects" value={`${DATA.projects.length}+`} numericValue={DATA.projects.length} numericSuffix="+" />
+                  <StatCard icon="&#x2699;&#xfe0f;" label="Tech Stack" value={`${DATA.skills.length}+`} numericValue={DATA.skills.length} numericSuffix="+" />
                   <StatCard icon="&#x1f3af;" label="Current Role" value="IT HEAD" />
                 </motion.div>
               </motion.div>
@@ -409,10 +638,15 @@ export default function Page() {
           <Section id="about">
             <div className="mx-auto w-full max-w-2xl">
               <SectionHeader label="PROFILE" title="About" />
-              <div className="neon-border rounded-lg p-5 bg-[hsl(var(--card))]">
-                <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
-                  {DATA.summary.replace(/\*\*/g, '')}
-                </p>
+              <div className="neon-border rounded-lg p-5 bg-[hsl(var(--card))] flex gap-5 items-start">
+                <div className="flex-1">
+                  <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed">
+                    {DATA.summary.replace(/\*\*/g, '')}
+                  </p>
+                </div>
+                <div className="hidden sm:block">
+                  <Radar />
+                </div>
               </div>
             </div>
           </Section>
@@ -463,7 +697,7 @@ export default function Page() {
           <Section id="skills">
             <div className="mx-auto w-full max-w-2xl">
               <SectionHeader label="TECH TREE" title="Skills & Arsenal" />
-              <div className="neon-border rounded-lg p-5 bg-[hsl(var(--card))]">
+              <div className="neon-border rounded-lg p-5 bg-[hsl(var(--card))] hex-pattern">
                 <SkillGroup title="AI / LLM" skills={["LangChain", "RAG", "MCP", "LLM Orchestration", "AI Agents"]} color="var(--neon-cyan)" />
                 <SkillGroup title="Backend" skills={["Python", "FastAPI", "Node.js", "NestJS", "Prisma", "SQLAlchemy"]} color="var(--neon-purple)" />
                 <SkillGroup title="Frontend" skills={["TypeScript", "Next.js", "React.js", "Tailwind CSS"]} color="var(--neon-blue)" />
@@ -478,7 +712,11 @@ export default function Page() {
               <SectionHeader label="MISSIONS" title="Featured Projects" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {DATA.projects.map((project, i) => (
-                  <MissionCard key={project.title} project={project} index={i} />
+                  i === 0 ? (
+                    <FeaturedMissionCard key={project.title} project={project} />
+                  ) : (
+                    <MissionCard key={project.title} project={project} index={i} />
+                  )
                 ))}
               </div>
             </div>
@@ -527,7 +765,7 @@ export default function Page() {
                 </p>
                 <Link href={DATA.contact.social.LinkedIn.url} target="_blank">
                   <motion.button
-                    className="font-mono text-sm px-6 py-2.5 rounded-lg border border-[var(--neon-cyan)]/40 text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10 transition-all"
+                    className="font-mono text-sm px-6 py-2.5 rounded-lg border border-[var(--neon-cyan)]/40 text-[var(--neon-cyan)] hover:bg-[var(--neon-cyan)]/10 transition-all neon-pulse-btn"
                     whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(0,255,204,0.15)" }}
                     whileTap={{ scale: 0.97 }}
                   >
@@ -546,6 +784,6 @@ export default function Page() {
           </Section>
         </main>
       )}
-    </>
+    </div>
   );
 }
