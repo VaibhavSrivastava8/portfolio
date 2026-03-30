@@ -145,7 +145,7 @@ export const DATA = {
         "WebSockets",
         "D3.js",
       ],
-      image: "",
+      image: "/hive.png",
     },
     {
       title: "Zentara — Enterprise ERP Suite",
@@ -163,7 +163,7 @@ export const DATA = {
         "Docker",
         "Traefik",
       ],
-      image: "",
+      image: "/zentara.png",
     },
     {
       title: "SmartBus360 — GPS Tracking App",
