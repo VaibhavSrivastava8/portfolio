@@ -323,10 +323,9 @@ function SystemStatus() {
 
   const entries = [
     { key: "EXPERIENCE", val: "4+ years", color: "var(--neon-cyan)" },
-    { key: "PROJECTS", val: `${DATA.projects.length} deployed`, color: "var(--neon-purple)" },
     { key: "TECH_STACK", val: `${DATA.skills.length} tools`, color: "var(--neon-blue)" },
     { key: "ROLE", val: "IT Head", color: "var(--neon-pink)" },
-    { key: "LOCATION", val: "Ranchi, India", color: "var(--neon-cyan)" },
+    { key: "LOCATION", val: "India", color: "var(--neon-cyan)" },
     { key: "STATUS", val: "Available for work", color: "#22c55e" },
   ];
 
@@ -653,7 +652,7 @@ export default function Page() {
                   <div className="status-dot" />
                   <span>SYSTEM ONLINE</span>
                   <span className="mx-2 opacity-30">|</span>
-                  <span>RANCHI, INDIA</span>
+                  <span>INDIA</span>
                   <span className="mx-2 opacity-30">|</span>
                   <span>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                 </motion.div>
@@ -768,10 +767,14 @@ export default function Page() {
             <div className="mx-auto w-full max-w-2xl">
               <SectionHeader label="TECH TREE" title="Skills & Arsenal" />
               <div className="neon-border rounded-lg p-5 bg-[hsl(var(--card))] hex-pattern">
-                <SkillGroup title="AI / LLM" skills={["LangChain", "RAG", "MCP", "LLM Orchestration", "AI Agents"]} color="var(--neon-cyan)" />
-                <SkillGroup title="Backend" skills={["Python", "FastAPI", "Node.js", "NestJS", "Prisma", "SQLAlchemy"]} color="var(--neon-purple)" />
-                <SkillGroup title="Frontend" skills={["TypeScript", "Next.js", "React.js", "Tailwind CSS"]} color="var(--neon-blue)" />
-                <SkillGroup title="Mobile & Infra" skills={["Flutter", "PostgreSQL", "Redis", "Docker", "WebSockets", "Firebase", "Azure"]} color="var(--neon-pink)" />
+                <SkillGroup title="AI / LLM" skills={["LangChain", "LangGraph", "RAG", "MCP", "LLM Orchestration", "AI Agents", "Prompt Engineering", "ChromaDB", "Ollama"]} color="var(--neon-cyan)" />
+                <SkillGroup title="Languages" skills={["Python", "TypeScript", "JavaScript", "Dart", "PHP"]} color="#f59e0b" />
+                <SkillGroup title="Backend" skills={["FastAPI", "NestJS", "Node.js", "Express.js", "Laravel", "Prisma", "SQLAlchemy"]} color="var(--neon-purple)" />
+                <SkillGroup title="Frontend" skills={["Next.js", "React.js", "Tailwind CSS", "Framer Motion", "D3.js"]} color="var(--neon-blue)" />
+                <SkillGroup title="Mobile" skills={["Flutter", "React Native"]} color="var(--neon-pink)" />
+                <SkillGroup title="Databases" skills={["PostgreSQL", "MySQL", "Redis", "MongoDB"]} color="#22c55e" />
+                <SkillGroup title="DevOps & Infra" skills={["Docker", "Traefik", "Git", "CI/CD", "Linux", "Vercel"]} color="#f97316" />
+                <SkillGroup title="Protocols & Cloud" skills={["WebSockets", "gRPC", "REST APIs", "Firebase", "Azure"]} color="#06b6d4" />
               </div>
             </div>
           </Section>
