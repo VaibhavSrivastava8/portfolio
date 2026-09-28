@@ -1,0 +1,361 @@
+/* One visual language: the ship's plum wood, island lavender, sail cream and gold. */
+.touch-hint { display: none; }
+.voyage-hud { display: none; position: fixed; left: 24px; top: 24px; z-index: 2000; max-width: 320px; pointer-events: none; }
+html.is-started .voyage-hud { display: block; }
+body:has(.menu.is-displayed) .voyage-hud, body:has(.modals.is-displayed) .voyage-hud { display: none; }
+.discovery-count { display: inline-block; color: #f7efdf; background: #493451bf; padding: 7px 12px; border-radius: 10px; font-size: 12px; }
+.voyage-route { display: flex; align-items: center; gap: 12px; margin-top: 10px; background: #f7efdf; border: 2px solid #493451; border-radius: 13px; padding: 10px 12px; color: #342744; box-shadow: 0 4px 0 #493451; pointer-events: auto; }
+.voyage-route[hidden], .chart-travel[hidden] { display: none; }
+.voyage-route strong, .voyage-route .js-course-distance { display: block; font-size: 12px; }
+.voyage-route .js-course-distance { color: #705b80; font-size: 10px; margin-top: 4px; }
+.voyage-route button { border: 0; background: none; font-size: 22px; cursor: pointer; color: #493451; min-width: 32px; min-height: 32px; }
+.course-arrow { font-size: 28px; display: block; flex-shrink: 0; }
+.chart-travel { position: absolute; z-index: 2850; bottom: 62px; left: 4%; right: 4%; border: 2px solid #493451; background: #f7efdf; border-radius: 14px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: #342744; }
+.chart-travel strong { font-size: 13px; }
+.chart-travel > div { display: flex; gap: 10px; }
+.chart-travel .voyage-button { padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+.map .location { background: none; border: 0; padding: 0; }
+.map .location:focus-visible .name-container .name { opacity: 1; transform: scale(1); }
+.exhibit-notes { margin: 22px 0; padding: 14px 0; border-top: 1px dashed #6c517950; color: #705b80; }
+.exhibit-notes > summary { cursor: pointer; color: #493451; font-size: 13px; font-weight: 800; padding: 8px 0; }
+.exhibit-notes[open] > summary { margin-bottom: 20px; }
+.menu.portfolio-menu .navigation { display: none; }
+ .menu.portfolio-menu .inner { width: min(420px, 36vw); bottom: auto; height: min(440px, calc(100dvh - 60px)); }
+.menu.portfolio-menu .inner:has(.content.is-visible .exhibit-notes[open]) { height: min(680px, calc(100dvh - 60px)); }
+@media (pointer: coarse) {
+    .touch-hint { display: inline; }
+    .keyboard-hint { display: none; }
+    button, summary { touch-action: manipulation; }
+}
+@media (max-width: 640px) {
+    .menu.portfolio-menu .inner { width: auto; height: auto; bottom: 20px; top: 40dvh; }
+    .menu.portfolio-menu .inner:has(.content.is-visible .exhibit-notes[open]) { height: auto; }
+    .modals:has(.project-card.is-displayed) { padding-top: 40dvh; }
+    .modal.project-card { max-height: 57dvh; }
+    .voyage-hud { top: auto; bottom: calc(150px + env(safe-area-inset-bottom)); left: 12px; right: 12px; max-width: 290px; }
+    .spatial-command-dock { top: max(12px, env(safe-area-inset-top)); }
+    .chart-travel { bottom: 45px; flex-wrap: wrap; gap: 8px; padding: 10px; }
+    .chart-travel strong { font-size: 11px; }
+    .chart-travel .voyage-button { min-height: 44px; padding: 7px 12px; }
+    .map .map-telemetry-hud { gap: 5px; padding: 6px; font-size: 9px; }
+    .map .map-telemetry-hud .telemetry-item { font-size: 8px; gap: 3px; }
+    .welcome-footer { bottom: max(24px, env(safe-area-inset-bottom)); }
+}
+@media (max-height: 500px) and (min-width: 641px) {
+    .menu.portfolio-menu .inner { height: calc(100dvh - 32px); top: 12px; }
+    .menu.portfolio-menu .content-inner { padding: 18px; }
+    .voyage-hud { top: auto; bottom: 20px; }
+}
+:root {
+    --ink: #342744; --muted: #705b80; --wood: #493451;
+    --paper: #f7efdf; --lavender: #e7daee; --gold: #f5c777;
+    --edge: #6c5179; --coral: #e7a3a0;
+}
+body, button, a, kbd { font-family: 'Nunito', 'Pally-Medium', sans-serif; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--gold); outline-offset: 5px; }
+.voyage-welcome {
+    position: fixed; inset: 0; z-index: 2700; color: var(--paper);
+    background: linear-gradient(90deg, #27153770, transparent 60%);
+    opacity: 1; transition: opacity .6s; pointer-events: none;
+}
+.voyage-welcome.is-hidden { opacity: 0; }
+.voyage-welcome.is-hidden * { pointer-events: none; }
+.welcome-copy { position: absolute; left: 7vw; top: 17vh; max-width: 490px; }
+.welcome-eyebrow { font-size: 15px; margin: 0 0 18px; letter-spacing: .03em; }
+.welcome-copy h1 {
+    font: 400 clamp(48px, 6.8vw, 98px)/1.02 'Pally-Medium', sans-serif;
+    margin: 0; letter-spacing: -.035em; text-shadow: 0 4px 0 #35253d40;
+}
+.welcome-copy h1 span { color: var(--gold); }
+.welcome-role { font-size: 17px; line-height: 1.6; margin: 22px 0 25px; }
+.welcome-actions { display: flex; gap: 14px; flex-wrap: wrap; }
+.voyage-button, .btn-primary, .btn-secondary, .fleet-btn, .btn-launch {
+    display: inline-flex; align-items: center; justify-content: center; gap: 20px;
+    padding: 12px 20px; border: 2px solid var(--wood); border-radius: 13px;
+    background: var(--gold); color: var(--ink); font-size: 15px; font-weight: 800;
+    text-decoration: none; cursor: pointer; box-shadow: 0 5px 0 var(--wood);
+    transition: transform .15s, box-shadow .15s; pointer-events: auto;
+}
+.voyage-button:hover, .btn-primary:hover, .btn-secondary:hover, .fleet-btn:hover, .btn-launch:hover {
+    transform: translateY(-2px); box-shadow: 0 7px 0 var(--wood);
+}
+.voyage-button:active, .fleet-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood); }
+.voyage-button.is-paper, .btn-secondary, .fleet-btn.secondary { background: var(--paper); }
+.welcome-hint { font-size: 13px; line-height: 1.8; margin-top: 26px; opacity: .85; }
+.welcome-footer {
+    position: absolute; bottom: 30px; left: 7vw; right: 5vw;
+    display: flex; justify-content: space-between; gap: 20px; font-size: 13px;
+}
+.welcome-footer div { display: flex; gap: 24px; }
+.welcome-footer button, .welcome-footer a { pointer-events: auto; color: var(--paper); background: none; border: 0; cursor: pointer; font-size: inherit; padding: 0; }
+.welcome-footer a { text-decoration: none; border-bottom: 1px solid #f7efdf70; }
+body:has(.voyage-welcome:not(.is-hidden)) .interact-prompt { visibility: hidden; }
+
+/* The canvas remains the preview. No separate illustrations or glass dashboard. */
+.menu.portfolio-menu { background: linear-gradient(90deg, #29153518, transparent 55%); backdrop-filter: none; -webkit-backdrop-filter: none; color: var(--ink); }
+.portfolio-menu .inner {
+    position: absolute; inset: 26px 28px 30px auto; width: min(560px, 45vw);
+    display: flex; flex-direction: column; border: 3px solid var(--wood);
+    border-radius: 24px; background: var(--paper); box-shadow: 0 9px 0 var(--wood), 0 20px 45px #27153740;
+    overflow: visible;
+}
+.portfolio-menu .menu-window-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+    padding: 22px 24px 16px; border-radius: 20px 20px 0 0;
+    border-bottom: 2px solid #6c51792b; background: var(--lavender); flex-shrink: 0;
+}
+.portfolio-menu .window-brand { display: flex; align-items: center; gap: 12px; flex: 1; }
+.portfolio-menu .window-brand-symbol {
+    width: 40px; height: 40px; display: grid; place-items: center; background: var(--wood);
+    color: var(--gold); border-radius: 12px; font: 20px 'Pally-Medium', sans-serif; transform: rotate(-6deg);
+}
+.portfolio-menu .window-brand-titles { display: flex; flex-direction: column; gap: 4px; }
+.portfolio-menu .brand-title { font: 19px 'Pally-Medium', sans-serif; color: var(--ink); }
+.portfolio-menu .brand-sub { font-size: 11px; color: var(--muted); }
+.portfolio-menu .close {
+    display: flex; align-items: center; gap: 8px; background: none; border: 0;
+    color: var(--ink); cursor: pointer; padding: 6px 0; font-size: 12px;
+}
+.portfolio-menu .close-kbd { font-size: 23px; line-height: 1; }
+.portfolio-menu .navigation { display: flex; flex-wrap: wrap; gap: 7px; width: 100%; order: 3; }
+.portfolio-menu .navigation .item {
+    display: flex; align-items: center; gap: 5px; padding: 8px 11px;
+    background: #f7efdf80; border: 1px solid #6c517950; border-radius: 9px;
+    color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 800;
+}
+.portfolio-menu .navigation .item:hover { background: var(--paper); color: var(--ink); }
+.portfolio-menu .navigation .item.is-active { background: var(--wood); border-color: var(--wood); color: var(--paper); box-shadow: 0 3px 0 #291535; }
+.portfolio-menu .tab-index { display: none; }
+.portfolio-menu .container { position: relative; flex: 1; min-height: 0; }
+.portfolio-menu .contents { width: 100%; height: 100%; }
+.portfolio-menu .content { position: absolute; inset: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--edge) transparent; }
+.portfolio-menu .content-inner { padding: 28px 28px 36px; }
+.portfolio-menu .previews { position: fixed; left: 6vw; bottom: 9vh; width: 36vw; pointer-events: none; color: var(--paper); }
+.portfolio-preview-caption { text-shadow: 0 2px 8px #29153590; }
+.portfolio-preview-caption span { font: clamp(32px, 4.2vw, 62px) 'Pally-Medium', sans-serif; }
+.portfolio-preview-caption p { font-size: 14px; margin: 10px 0; }
+.portfolio-preview-caption .location-eyebrow { color: var(--gold); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.title { font-family: 'Pally-Medium', sans-serif; color: var(--ink); font-weight: 400; font-size: 30px; line-height: 1.15; margin: 0 0 12px; }
+.tagline { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 0 0 20px; }
+.text, .fleet-desc, .project-desc { color: var(--muted); font-size: 14px; line-height: 1.8; }
+.portfolio-lead { font: 26px/1.3 'Pally-Medium', sans-serif; color: var(--ink); margin: 26px 0 16px; }
+.portfolio-note { color: var(--muted); font-size: 12px; line-height: 1.8; margin-top: 28px; }
+.portfolio-note a { color: var(--ink); text-decoration: underline; }
+.studio-actions-row, .fleet-actions, .portfolio-contact-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+.fleet-showcase { display: flex; flex-direction: column; gap: 16px; }
+.fleet-card {
+    border: 2px solid #6c517935; border-radius: 16px; padding: 20px;
+    margin-bottom: 16px; background: #eee3f080; box-shadow: 0 3px 0 #6c517920;
+}
+.fleet-showcase .fleet-card { margin: 0; }
+.fleet-card-header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+.fleet-card-title { font: 21px/1.3 'Pally-Medium', sans-serif; color: var(--ink); margin: 0 0 10px; }
+.fleet-card-header .fleet-card-title { margin: 0; }
+.destination-number, .portfolio-period { font-size: 11px; color: var(--muted); display: block; margin-bottom: 12px; }
+.fleet-badge, .project-tag { font-size: 10px; color: var(--wood); background: #f5c77780; padding: 4px 8px; border-radius: 6px; }
+.fleet-tagline { font-size: 13px; color: var(--wood); margin: 6px 0; font-weight: 800; }
+.fleet-tech, .project-tech-stack { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0; }
+.fleet-tech span, .modal.project-card .tech-pill { font: 11px 'Nunito', sans-serif; color: var(--ink); background: #f7efdf; border: 1px solid #6c517938; padding: 5px 8px; border-radius: 7px; }
+.fleet-btn { font-size: 12px; padding: 9px 13px; gap: 8px; }
+.portfolio-timeline { border-left: 2px dashed #6c517960; padding-left: 16px; }
+.portfolio-subtitle { margin-top: 32px; }
+.portfolio-project-image { width: 100%; max-height: 250px; object-fit: contain; background: var(--lavender); border-radius: 12px; margin: 16px 0; }
+.portfolio-contact-links a { max-width: 100%; overflow-wrap: anywhere; }
+.portfolio-menu .options, .portfolio-menu .options-controls-table { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--muted); }
+.portfolio-menu .options td, .portfolio-menu .options-controls-table td { padding: 12px 4px; border-bottom: 1px solid #6c517926; }
+.portfolio-menu .options .button { background: var(--lavender); color: var(--ink); border: 1px solid var(--edge); box-shadow: 0 3px 0 var(--edge); font-family: inherit; border-radius: 8px; }
+.portfolio-menu .options-controls-table .key { background: var(--lavender); color: var(--ink); border: 1px solid #6c517945; }
+
+/* Island dossiers keep their actual 3D landmark in view. */
+.modals { backdrop-filter: none; -webkit-backdrop-filter: none; background: #29153525; }
+.modals:has(.project-card.is-displayed) { justify-content: flex-end; padding: 26px 28px; box-sizing: border-box; }
+.modal.project-card { width: min(560px, 45vw); max-height: calc(100dvh - 60px); overflow: auto; border-radius: 24px; }
+.modal.project-card .container { width: 100%; }
+.modals .modal.project-card .content {
+    padding: 30px; max-width: none; background: var(--paper); color: var(--ink);
+    border: 3px solid var(--wood); border-radius: 24px; backdrop-filter: none;
+    -webkit-backdrop-filter: none; box-shadow: inset 0 -6px 0 #e0cedf;
+}
+.modal.project-card .project-header { padding-right: 36px; margin-bottom: 20px; }
+.modal.project-card .project-title { font: 32px/1.2 'Pally-Medium', sans-serif; color: var(--ink); margin: 16px 0; }
+.modal.project-card .project-tag { font-family: inherit; text-transform: none; letter-spacing: 0; border: 0; }
+.modal.project-card .project-desc { font-family: inherit; color: var(--muted); }
+.modal.project-card .project-actions .btn-launch { background: var(--gold); color: var(--ink); border: 2px solid var(--wood); font-family: inherit; box-shadow: 0 5px 0 var(--wood); }
+.modals .content .close { background: var(--lavender); color: var(--ink); border: 1px solid var(--edge); border-radius: 10px; box-shadow: 0 3px 0 var(--edge); }
+.modals .content .close .icon.is-default { filter: brightness(.35); }
+.modal.project-card .project-actions { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 24px; }
+.modal.project-card .project-actions .btn-launch { font-size: 13px; padding: 10px 16px; }
+.notifications .notification { background: var(--paper); border: 2px solid var(--wood); border-radius: 14px; box-shadow: 0 5px 0 var(--wood); color: var(--ink); }
+.notifications .notification.is-achievement .top .title, .notifications .notification.is-achievement .top .progress, .notifications .notification.is-achievement .bottom .description { color: var(--ink); }
+.notifications .notification .time-bar { background: var(--gold); }
+.spatial-command-dock .dock-container { background: var(--paper); border: 2px solid var(--wood); border-radius: 16px; box-shadow: 0 5px 0 var(--wood); backdrop-filter: none; }
+.spatial-command-dock .dock-btn { font-family: inherit; color: var(--ink); }
+.spatial-command-dock .dock-btn:hover { background: var(--lavender); border-color: var(--edge); color: var(--ink); box-shadow: none; }
+.spatial-command-dock .dock-btn .dock-label { font-family: inherit; font-weight: 800; color: var(--ink); }
+.spatial-command-dock .dock-btn .dock-kbd { background: var(--lavender); color: var(--muted); border: 0; font-family: inherit; }
+.spatial-command-dock .dock-divider { background: #6c517930; }
+.interact-prompt { background: var(--paper); border: 2px solid var(--wood); color: var(--ink); font-family: inherit; font-weight: 800; letter-spacing: 0; box-shadow: 0 5px 0 var(--wood); backdrop-filter: none; }
+.interact-prompt:hover { border-color: var(--wood); box-shadow: 0 7px 0 var(--wood); }
+.portfolio-noscript { position: fixed; bottom: 20px; left: 20px; padding: 20px; z-index: 5000; background: var(--paper); color: var(--ink); }
+.portfolio-noscript a { color: var(--ink); }
+
+@media (max-width: 900px) {
+    .portfolio-menu .inner, .modal.project-card { width: 52vw; }
+    .portfolio-menu .menu-window-header { padding: 16px; gap: 12px; }
+    .portfolio-menu .brand-title { font-size: 17px; }
+    .portfolio-menu .close-label { display: none; }
+    .portfolio-menu .content-inner { padding: 24px 20px; }
+    .portfolio-menu .navigation .item { padding: 8px; font-size: 11px; }
+}
+@media (max-width: 640px) {
+    .welcome-copy { left: 7vw; top: 11vh; right: 7vw; }
+    .welcome-copy h1 { font-size: 58px; }
+    .welcome-role { font-size: 14px; max-width: 260px; }
+    .welcome-hint { font-size: 12px; max-width: 250px; }
+    .welcome-actions { gap: 10px; }
+    .voyage-button { font-size: 13px; padding: 10px 14px; }
+    .welcome-footer { left: 7vw; right: 7vw; bottom: 24px; font-size: 11px; }
+    .welcome-footer > span { display: none; }
+    .welcome-footer div { width: 100%; justify-content: space-between; }
+    .menu.portfolio-menu { background: #29153515; }
+    .portfolio-menu .inner { inset: 21dvh 10px 20px; width: auto; border-radius: 20px; }
+    .portfolio-menu .previews { top: 32px; bottom: auto; left: 24px; width: 80vw; }
+    .portfolio-preview-caption span { font-size: 30px; }
+    .portfolio-preview-caption p:last-child { display: none; }
+    .portfolio-preview-caption .location-eyebrow { font-size: 10px; margin: 0 0 5px; }
+    .portfolio-menu .menu-window-header { padding: 14px; }
+    .portfolio-menu .window-brand-symbol { width: 30px; height: 30px; font-size: 16px; }
+    .portfolio-menu .brand-title { font-size: 16px; }
+    .portfolio-menu .brand-sub { display: none; }
+    .portfolio-menu .navigation { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px; }
+    .portfolio-menu .navigation { scrollbar-width: none; }
+    .portfolio-menu .navigation::-webkit-scrollbar { display: none; }
+    .portfolio-menu .navigation .item { flex-shrink: 0; font-size: 12px; padding: 8px 10px; }
+    .portfolio-menu .content-inner { padding: 22px 18px; }
+    .title { font-size: 26px; }
+    .portfolio-lead { font-size: 24px; }
+    .fleet-card { padding: 16px; }
+    .modals:has(.project-card.is-displayed) { padding: 21dvh 10px 20px; align-items: flex-end; }
+    .modal.project-card { width: 100%; max-height: 75dvh; }
+    .modals .modal.project-card .content { padding: 24px 20px; }
+    .spatial-command-dock { left: 12px; right: auto; }
+    .spatial-command-dock .dock-btn { padding: 7px 9px; }
+    .spatial-command-dock .dock-btn .dock-kbd { display: none; }
+    .interact-prompt { font-size: 12px; padding: 10px 16px; max-width: 92vw; white-space: normal; text-align: center; }
+}
+@media (max-height: 550px) and (min-width: 641px) {
+    .welcome-copy { top: 8vh; }
+    .welcome-copy h1 { font-size: 50px; }
+    .welcome-role { margin: 12px 0 16px; }
+    .welcome-hint { margin-top: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .voyage-welcome, .portfolio-menu *, .voyage-button, .modals * { transition: none !important; animation: none !important; }
+}
+
+/* Final responsive overrides keep the exhibit visible above a mobile ship log. */
+.map { background: #496b86; border: 3px solid #493451; }
+.map .map-container .texture.is-visible { opacity: 1; filter: none; }
+.map::before {
+    color: #f7efdf; background: #493451d9; border-radius: 8px; padding: 7px 10px;
+    content: 'Sea chart · choose a destination';
+}
+.map.is-charting::before { content: 'Charting the islands…'; }
+.map.has-chart-error::before { content: 'Capture unavailable · reopen chart to retry'; }
+.map .close {
+    top: 12px; right: 12px; width: 44px; height: 44px; padding: 0;
+    display: grid; place-items: center; background: #493451; color: #f5c777;
+    border: 2px solid #785b78; border-radius: 12px;
+    box-shadow: inset 0 2px 0 #b0959a45, 0 3px 0 #251b30;
+}
+.map .close:hover { background: #604467; color: #f7efdf; box-shadow: 0 3px 0 #251b30; }
+.map .close:active { transform: translateY(2px); box-shadow: none; }
+.map .player .ship-icon {
+    width: 64px; height: 64px; margin: -32px 0 0 -32px;
+    filter: drop-shadow(0 2px 2px #251b3060);
+}
+.map-ship-model { display: block; width: 100%; height: 100%; object-fit: contain; }
+.map .player .ship-radar-pulse { border-color: #f5c777; box-shadow: none; opacity: .6; }
+@media (max-width: 640px) {
+    .map .player .ship-icon { width: 48px; height: 48px; margin: -24px 0 0 -24px; }
+}
+/* Separate wooden instrument tiles, not a website navigation pill. */
+.spatial-command-dock .dock-container {
+    padding: 0; gap: 10px; background: none; border: 0; border-radius: 0;
+    box-shadow: none; backdrop-filter: none;
+}
+.spatial-command-dock .dock-btn {
+    position: relative; width: 64px; min-height: 64px; padding: 9px 6px 7px;
+    display: flex; flex-direction: column; gap: 5px;
+    color: #f5c777; background: #493451; border: 2px solid #785b78; border-radius: 12px;
+    box-shadow: inset 0 2px 0 #b0959a45, inset 0 -3px 0 #2f2238, 0 4px 0 #251b30, 0 7px 12px #251b302a;
+    transition: transform .15s, background .15s, box-shadow .15s;
+}
+.spatial-command-dock .dock-btn::after {
+    content: ''; position: absolute; inset: 4px; border: 1px solid #c9a87922;
+    border-radius: 7px; pointer-events: none;
+}
+.spatial-command-dock .dock-btn .dock-icon { width: 26px; height: 26px; flex-shrink: 0; font-size: inherit; }
+.spatial-command-dock .dock-btn .dock-label {
+    font: 700 11px/1.2 'Nunito', sans-serif; letter-spacing: .02em; color: #f7efdf;
+}
+.spatial-command-dock .dock-btn:hover {
+    background: #5b4264; color: #ffe1a1; border-color: #b39381; transform: translateY(-2px);
+    box-shadow: inset 0 2px 0 #b0959a45, inset 0 -3px 0 #2f2238, 0 6px 0 #251b30;
+}
+.spatial-command-dock .dock-btn:active {
+    transform: translateY(3px); box-shadow: inset 0 1px 0 #b0959a45, 0 1px 0 #251b30;
+}
+.spatial-command-dock .dock-btn.is-pan { border-color: #f5c777; }
+.spatial-command-dock .dock-btn.is-pan .dock-icon { transform: rotate(45deg); }
+@media (max-width: 640px) {
+    .spatial-command-dock { left: auto; right: max(12px, env(safe-area-inset-right)); }
+    .spatial-command-dock .dock-container { gap: 7px; }
+    .spatial-command-dock .dock-btn { width: 50px; min-height: 54px; padding: 7px 4px; gap: 4px; border-radius: 10px; }
+    .spatial-command-dock .dock-btn .dock-icon { width: 22px; height: 22px; }
+    .spatial-command-dock .dock-btn .dock-label { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .spatial-command-dock .dock-btn { transition: none; }
+}
+@media (max-width: 640px) {
+    .modals:has(.project-card.is-displayed) { padding-top: 40dvh; }
+    .modal.project-card { max-height: 57dvh; }
+}
+/* One quiet nautical instrument leaves the coastline unobstructed. */
+.map .map-telemetry-hud {
+    left: 12px; bottom: 12px; transform: none; width: 48px; height: 60px;
+    max-width: none; padding: 4px; box-sizing: border-box; display: flex;
+    flex-direction: column; gap: 0; background: #493451; color: #f5c777;
+    border: 2px solid #785b78; border-radius: 12px;
+    box-shadow: inset 0 2px 0 #b0959a45, 0 3px 0 #251b30;
+}
+.chart-north { font: 800 10px/14px 'Nunito', sans-serif; color: #f7efdf; }
+.chart-heading-needle { width: 32px; height: 32px; color: #f5c777; }
+.map .chart-pin-label {
+    position: absolute; left: 50%; top: 28px; transform: translateX(-50%);
+    max-width: 105px; width: max-content; white-space: normal;
+    padding: 3px 6px; border-radius: 5px; background: #342744e8;
+    color: #f7efdf; font: 700 11px/1.2 'Nunito', sans-serif;
+    text-align: center; pointer-events: none; box-shadow: 0 1px 0 #f5c77760;
+}
+.map .has-chart-label:focus-visible { outline-offset: 2px; }
+@media (max-width: 640px) {
+    .map .chart-pin-label { font-size: 8px; max-width: 64px; padding: 2px 4px; top: 24px; }
+}
+.map .is-territory .chart-pin-label {
+  top: auto;
+  bottom: 28px;
+}
+.map .has-chart-label .name-container { display: none; }
+.map .territory-kraken .chart-pin-label {
+    left: -6px; top: 0; bottom: auto; transform: translateX(-100%);
+}
+.map .territory-sharks .chart-pin-label,
+.map .territory-mosasaurus .chart-pin-label {
+    left: calc(100% + 4px); top: 0; bottom: auto; transform: none;
+}
+@media (max-width: 640px) {
+    .map .territory-mosasaurus .chart-pin-label { top: 18px; }
+}

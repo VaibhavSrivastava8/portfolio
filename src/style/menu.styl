@@ -1,0 +1,21 @@
+// Visibility and layout hooks; the island field-guide theme lives in portfolio.css.
+.menu
+    display none
+    position fixed
+    inset 0
+    z-index 3000
+    opacity 0
+    transition opacity 0.3s ease
+
+    &.is-displayed
+        display block
+
+    &.is-visible
+        opacity 1
+
+    .content, .preview
+        display none
+
+        &.is-visible
+            display block
+

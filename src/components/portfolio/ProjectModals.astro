@@ -1,0 +1,18 @@
+---
+import { portfolio } from '../../data/portfolio.js';
+---
+{portfolio.projects.map(project => <div class="js-modal modal project-card" data-name={project.id} role="dialog" aria-modal="true" aria-label={project.title}>
+    <div class="container"><div class="content">
+        <button class="js-close close" aria-label="Close project details"><img class="icon is-default" src="/ui/close.svg" alt="" /><span class="icon is-xbox">A</span></button>
+        <div class="project-header"><span class="project-tag">Discovered · {project.category}</span><h2 class="project-title">{project.title}</h2></div>
+        <details class="exhibit-notes"><summary>Read the project log</summary>
+        {project.image && <img class="portfolio-project-image" src={project.image} alt={`${project.title} preview`} loading="lazy" />}
+        <p class="project-desc">{project.description}</p>
+        <div class="project-tech-stack">{project.technologies.map(tech => <span class="tech-pill">{tech}</span>)}</div>
+        </details>
+        <div class="project-actions">
+            {project.url && <a class="btn-launch" href={project.url} target="_blank" rel="noopener noreferrer">{project.linkLabel || 'Visit website'} ↗</a>}
+            <button class="fleet-btn secondary js-return-projects" type="button">Back to sailing</button>
+        </div>
+    </div></div>
+</div>)}

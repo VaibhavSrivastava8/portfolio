@@ -1,0 +1,129 @@
+---
+import { portfolio, sections } from '../../data/portfolio.js';
+import PortfolioContent from './PortfolioContent.astro';
+---
+<div class="js-menu menu portfolio-menu" role="dialog" aria-modal="true" aria-label="Personal portfolio">
+    <div class="inner">
+        <div class="menu-window-header">
+            <div class="window-brand"><div class="window-brand-symbol">VS</div><div class="window-brand-titles"><span class="brand-title">Captain’s log</span><span class="brand-sub">A voyage through my work</span></div></div>
+            <div class="js-navigation navigation" role="tablist" aria-label="Portfolio sections">
+                {sections.map((section, index) => <button class="js-navigation-item item" id={`tab-${section.id}`} data-name={section.id} role="tab" aria-selected="false" aria-controls={`panel-${section.id}`} tabindex="-1"><span class="tab-index">{String(index + 1).padStart(2, '0')}</span><span class="tab-label">{section.label}</span></button>)}
+            </div>
+            <button class="js-close close" aria-label="Close portfolio"><span class="close-label">Back to sea</span><kbd class="close-kbd">×</kbd></button>
+        </div>
+        <div class="container">
+            <div class="previews js-previews">
+                {sections.map(section => <div class={`js-preview preview ${section.id}-preview`}>
+                    <div class="portfolio-preview-caption"><p class="location-eyebrow">You’re exploring</p><span>{section.label}</span><p>The islands are part of the story.</p></div>
+                </div>)}
+            </div>
+            <div class="contents js-contents">
+                {sections.filter(section => section.id !== 'settings').map(section => <div class={`js-content content ${section.id}-content`} id={`panel-${section.id}`} role="tabpanel" aria-labelledby={`tab-${section.id}`} inert><div class="content-inner">
+                    <p class="tagline">Anchorage discovered</p>
+                    <h2 class="title">{section.label}</h2>
+                    <p class="text">Explore the exhibit beside your ship. This island holds a part of my story.</p>
+                    <details class="exhibit-notes"><summary>Read this island’s log</summary><PortfolioContent section={section.id} interactive /></details>
+                </div></div>)}
+                        <div class="js-content content settings-content" id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" inert>
+                            <div class="content-inner">
+                                <div class="title">World Settings</div>
+                                <div class="tagline">Sound, graphics, and sailing controls</div>
+
+                                <table class="options">
+                                    <tbody>
+                                        <tr>
+                                            <td>Ocean Ambience</td>
+                                            <td>
+                                                <button class="js-audio-toggle audio-toggle button is-small has-tooltip">
+                                                    <div class="tooltip">Toggles ocean soundscape</div>
+                                                    <img class="icon icon-audio audio-on" src="ui/audio/audioOn.svg" loading="lazy" alt="Audio On">
+                                                    <img class="icon icon-audio audio-off" src="ui/audio/audioOff.svg" loading="lazy" alt="Audio Off">
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Visual Fidelity</td>
+                                            <td>
+                                                <button class="js-quality-toggle quality-toggle button is-small has-tooltip">
+                                                    <div class="tooltip">Toggles graphical post-processing</div>
+                                                    <span>Low</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Vessel Stranded?</td>
+                                            <td>
+                                                <button class="js-respawn button is-small has-tooltip">
+                                                    <div class="tooltip">Teleports vessel to the closest anchorage</div>
+                                                    Respawn
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Calm Waters</td>
+                                            <td>
+                                                <button class="js-reset button is-small has-tooltip">
+                                                    <div class="tooltip">Resets floating objects and ocean dynamics</div>
+                                                    Reset
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Engine Shading</td>
+                                            <td>
+                                                <button class="js-renderer button is-small is-disabled is-success has-tooltip">
+                                                    <div class="js-tooltip tooltip">Three.js WebGPU / TSL Pipeline</div>
+                                                    <span>WebGPU</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                <div class="helm-controls-guide" style="margin-top: 24px;">
+                                    <div class="tagline" style="margin-bottom: 10px;">Maritime Helm Rigging (Keyboard)</div>
+                                    <table class="options-controls-table">
+                                        <tbody>
+                                            <tr>
+                                                <td><span class="key">W</span> / <span class="key">S</span> or <span class="key">↑</span> / <span class="key">↓</span></td>
+                                                <td>Ahead Full Sail / Sternway Reverse</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">A</span> / <span class="key">D</span> or <span class="key">←</span> / <span class="key">→</span></td>
+                                                <td>Turn Rudder Port / Starboard</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">SHIFT</span></td>
+                                                <td>Catch the Wind (Full Speed Surge)</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">CTRL</span> or <span class="key">B</span></td>
+                                                <td>Drop Anchor / Slow Vessel</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">E</span></td>
+                                                <td>Inspect Project / Board Island</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">C</span></td>
+                                                <td>Toggle Orbit View / Pan Map</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">R</span></td>
+                                                <td>Recenter Camera on Vessel</td>
+                                            </tr>
+                                            <tr>
+                                                <td><span class="key">M</span></td>
+                                                <td>Open Nautical Sea Chart</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                            </div>
+                        </div>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,136 @@
+---
+import GameEngine from '../components/game/GameEngine';
+import PortfolioMenu from '../components/portfolio/PortfolioMenu.astro';
+import ProjectModals from '../components/portfolio/ProjectModals.astro';
+import { portfolio } from '../data/portfolio.js';
+import { portfolioStops } from '../data/portfolioStops.js';
+import '../style/index.styl';
+import '../style/portfolio.css';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Amatic+SC:wght@700&display=swap" rel="stylesheet">
+    <title>{portfolio.name} — {portfolio.description}</title>
+    <meta name="description" content={portfolio.summary} />
+    <meta property="og:title" content={portfolio.name + ' — Personal Portfolio'} />
+    <meta property="og:description" content={portfolio.description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    
+
+    <div class="js-fonts-loader fonts-loader">
+        <div class="font nunito" data-font="400 20px Nunito"> </div>
+        <div class="font amatic-sc" data-font="700 20px 'Amatic SC'"> </div>
+        <div class="font pally" data-font="500 20px Pally-Medium"> </div>
+    </div>
+    
+    <div class="game">
+
+        <canvas class="js-canvas"></canvas>
+
+        <div class="js-landing-screen voyage-welcome">
+            <div class="welcome-copy">
+                <p class="welcome-eyebrow">A little world of things I build</p>
+                <h1>Hello, I’m<br><span>Vaibhav.</span></h1>
+                <p class="welcome-role">AI / LLM engineer &amp; full-stack developer</p>
+                <div class="welcome-actions">
+                    <button class="js-landing-embark voyage-button" type="button">Set sail <span aria-hidden="true">↗</span></button>
+                    <button class="js-portal-open-map voyage-button is-paper" type="button">Open sea chart</button>
+                </div>
+                <p class="welcome-hint">A ship, a few islands, and a lot of curiosity.<br><span class="keyboard-hint">Sail with WASD or the arrow keys. Inspect with E.</span><span class="touch-hint">Touch and drag the sea to steer. Tap Inspect nearby.</span></p>
+            </div>
+            <div class="welcome-footer">
+                <span>Made to be explored.</span>
+                <div>
+                    <button class="js-portal-sound-toggle" type="button" aria-label="Toggle sound">Sound: On</button>
+                    <a href="/resume/">Just the essentials ↗</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nautical HUD -->
+        <div class="js-damage-vignette damage-vignette"></div>
+        <button class="js-interact-prompt interact-prompt">Press [E] to Inspect</button>
+
+        <!-- Touch buttons -->
+        <div class="js-touch-buttons touch-buttons">
+            <div class="js-overlay overlay"></div>
+            <div class="list">
+                <button data-name="interact" class="js-button interact">Interact</button>
+                <button data-name="unstuck" class="js-button unstuck">Unstuck</button>
+                <button data-name="previous" class="js-button previous"></button>
+                <button data-name="next" class="js-button next"></button>
+                <button data-name="open" class="js-button open"></button>
+                <button data-name="close" class="js-button close"></button>
+            </div>
+        </div>
+
+        <!-- Shipboard controls: shortcuts stay available without filling the HUD. -->
+        <nav class="spatial-command-dock" aria-label="Sailing controls">
+            <div class="dock-container">
+                <button class="js-menu-trigger dock-btn" type="button" aria-label="Open helm settings" aria-keyshortcuts="Escape" title="Helm settings · Esc">
+                    <svg class="dock-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="16" cy="16" r="8"/><circle cx="16" cy="16" r="2.5"/><path d="M16 3v10m0 6v10M3 16h10m6 0h10M7 7l7 7m4 4 7 7M7 25l7-7m4-4 7-7"/></svg><span class="dock-label">Helm</span>
+                </button>
+                <button class="js-map-trigger dock-btn" type="button" aria-label="Open Sea Chart" aria-keyshortcuts="m" title="Sea chart · M">
+                    <svg class="dock-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 7 8-3 10 4 8-3v21l-8 3-10-4-8 3Zm8-3v21M21 8v21"/><path d="m14 17 2 2 4-5"/></svg><span class="dock-label">Chart</span>
+                </button>
+                <button class="js-camera-mode-toggle dock-btn" type="button" aria-label="Switch to pan view" aria-keyshortcuts="c" aria-pressed="false" title="Orbit view · C to switch">
+                    <svg class="dock-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="16" cy="16" r="12"/><path d="m20 11-2 7-7 3 3-8Z"/><path d="M16 2v3m0 22v3M2 16h3m22 0h3"/></svg><span class="dock-label cam-label">Orbit</span>
+                </button>
+                <button class="js-recenter-ship dock-btn" type="button" aria-label="Recenter Camera" aria-keyshortcuts="r" title="Return camera to ship · R">
+                    <svg class="dock-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="16" cy="5" r="3"/><path d="M16 8v20M10 13h12M5 20c0 5 5 8 11 8s11-3 11-8M3 23l2-5 4 3m14 0 4-3 2 5"/></svg><span class="dock-label">Ship</span>
+                </button>
+            </div>
+        </nav>
+
+        <div class="voyage-hud">
+            <span class="js-voyage-discoveries discovery-count" aria-label="Exploration progress">0 / {portfolioStops.length} discovered</span>
+            <div class="js-voyage-route voyage-route" hidden>
+                <span class="js-course-arrow course-arrow" aria-hidden="true">↑</span>
+                <div><strong class="js-course-label"></strong><span class="js-course-distance"></span></div>
+                <button class="js-clear-course" type="button" aria-label="Clear course">×</button>
+            </div>
+        </div>
+        <PortfolioMenu />
+
+        <!-- Modals -->
+        <div class="js-modals modals">
+
+            <ProjectModals />
+
+            <!-- Map -->
+            <div class="js-modal modal map" data-name="map" role="dialog" aria-modal="true" aria-label="Sea chart">
+
+                <button class="js-close close" type="button" aria-label="Close sea chart" title="Close chart (M or Escape)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m7 7 10 10M17 7 7 17" /></svg>
+                </button>
+
+                <div class="js-chart-travel chart-travel" hidden>
+                    <strong class="js-chart-destination"></strong>
+                    <div><button class="js-chart-course voyage-button is-paper" type="button">Set course</button><button class="js-chart-teleport voyage-button" type="button">Travel here</button></div>
+                </div>
+                <div class="js-map-container map-container">
+                    <img class="js-texture texture" loading="lazy">
+                    <div class="js-player player"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Notifications -->
+        <div class="js-notifications notifications">
+            <div class="js-items items"></div>
+        </div>
+
+    </div>
+
+    <noscript><div class="portfolio-noscript">Explore my projects and career in the <a href="/resume/">readable portfolio</a>.</div></noscript>
+    <GameEngine client:only="react" />
+  </body>
+</html>

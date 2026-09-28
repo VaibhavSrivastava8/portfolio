@@ -1,0 +1,49 @@
+.modals
+    display none
+    position fixed
+    inset 0
+    align-items center
+    justify-content center
+    opacity 0
+    transition opacity 0.3s
+    z-index 3000
+
+    &.is-displayed
+        display flex
+
+    &.is-visible
+        opacity 1
+
+    .modal
+        display none
+
+        &.is-displayed
+            display block
+
+    .content
+        position relative
+
+        .close
+            display flex
+            justify-content center
+            align-items center
+            position absolute
+            top 20px
+            right 20px
+            width 36px
+            height 36px
+            cursor pointer
+
+            .icon.is-default
+                width 16px
+                height 16px
+
+                .is-mode-gamepad.is-gamepad-xbox &
+                    display none
+
+            .icon.is-xbox
+                display none
+
+                .is-mode-gamepad.is-gamepad-xbox &
+                    display block
+

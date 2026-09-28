@@ -1,0 +1,68 @@
+---
+import { portfolio } from '../../data/portfolio.js';
+const { section, interactive = false } = Astro.props;
+---
+{section === 'home' && <>
+    <div class="tagline">Meet the builder · India</div>
+    <h1 class="title">{portfolio.name}</h1>
+    <p class="portfolio-lead">Engineer by trade.<br />Explorer by instinct.</p>
+    <p class="text">{portfolio.summary}</p>
+    <div class="studio-actions-row">
+        {interactive ? <button class="btn-primary js-menu-switch js-main-focus" data-target="projects">Explore my work</button> : <a class="btn-primary" href="#projects">Explore my work</a>}
+        <a class="btn-secondary" href={`mailto:${portfolio.contact.email}`}>Get in touch</a>
+    </div>
+    <p class="portfolio-note">Sail between project islands, or browse every section directly. This world is a window into my work.</p>
+</>}
+{section === 'projects' && <>
+    <h2 class="title">Selected projects</h2>
+    <p class="tagline">{portfolio.projects.length} projects · live products and open-source work</p>
+    <div class="fleet-showcase">
+        {portfolio.projects.map(project => <article class="fleet-card" id={`project-${project.id}`}>
+            <span class="destination-number">Island {String(portfolio.projects.indexOf(project) + 1).padStart(2, '0')}</span>
+            <div class="fleet-card-header"><h3 class="fleet-card-title">{project.title}</h3><span class="fleet-badge active">{project.category}</span></div>
+            <p class="fleet-desc">{project.description}</p>
+            <div class="fleet-tech">{project.technologies.map(skill => <span>{skill}</span>)}</div>
+            <div class="fleet-actions">
+                {project.url && <a class="fleet-btn primary" href={project.url} target="_blank" rel="noopener noreferrer">{project.linkLabel || 'Visit website'} ↗</a>}
+                {interactive && <button class="fleet-btn secondary js-open-project" data-target={project.id}>Explore island ↗</button>}
+            </div>
+        </article>)}
+    </div>
+</>}
+{section === 'skills' && <>
+    <h2 class="title">Skills & tools</h2>
+    <p class="tagline">From agent workflows to production infrastructure</p>
+    {[
+        ['AI & agents', ['LangChain', 'LangGraph', 'RAG', 'MCP', 'LLM Orchestration', 'AI Agents', 'Prompt Engineering', 'ChromaDB', 'Ollama']],
+        ['Languages & backend', ['Python', 'TypeScript', 'JavaScript', 'Dart', 'PHP', 'FastAPI', 'NestJS', 'Node.js', 'Express.js', 'Laravel', 'Prisma', 'SQLAlchemy']],
+        ['Web & mobile', ['Next.js', 'React.js', 'Tailwind CSS', 'Framer Motion', 'D3.js', 'Flutter', 'React Native']],
+        ['Data & infrastructure', ['PostgreSQL', 'MySQL', 'Redis', 'MongoDB', 'Docker', 'Traefik', 'Git', 'CI/CD', 'WebSockets', 'gRPC', 'REST APIs', 'Firebase', 'Azure', 'Vercel', 'Linux']],
+    ].map(([label, skills]) => <article class="fleet-card"><h3 class="fleet-card-title">{label}</h3><div class="fleet-tech">{Array.isArray(skills) && skills.map(skill => <span>{skill}</span>)}</div></article>)}
+</>}
+{section === 'experience' && <>
+    <h2 class="title">Experience</h2>
+    <p class="tagline">My journey through software, AI, and infrastructure</p>
+    <div class="portfolio-timeline">{portfolio.work.map(job => <article class="fleet-card">
+        <p class="portfolio-period">{job.start} — {job.end} // {job.location}</p>
+        <h3 class="fleet-card-title">{job.title}</h3><p class="fleet-tagline">{job.company}</p><p class="fleet-desc">{job.description}</p>
+    </article>)}</div>
+    <h2 class="title portfolio-subtitle">Education</h2>
+    {portfolio.education.map(item => <article class="fleet-card"><p class="portfolio-period">{item.start} — {item.end}</p><h3 class="fleet-card-title">{item.school}</h3><p class="fleet-desc">{item.degree}</p><a class="fleet-btn secondary" href={item.href} target="_blank" rel="noopener noreferrer">Institution ↗</a></article>)}
+</>}
+{section === 'achievements' && <>
+    <h2 class="title">Credentials & milestones</h2>
+    <p class="tagline">Collected along the journey</p>
+    {portfolio.certifications.map(cert => <article class="fleet-card"><p class="portfolio-period">{cert.provider} // {cert.dates}</p><h3 class="fleet-card-title">{cert.title}</h3><p class="fleet-desc">{cert.description}</p><a class="fleet-btn primary" href={cert.links} target="_blank" rel="noopener noreferrer">Verify credential ↗</a></article>)}
+    <article class="fleet-card"><h3 class="fleet-card-title">Building across disciplines</h3><p class="fleet-desc">My work spans autonomous AI agents, enterprise software, real-time tracking, mobile applications, and document intelligence. Explore the projects for concrete examples.</p></article>
+</>}
+{section === 'contact' && <>
+    <h2 class="title">Let’s build something.</h2>
+    <p class="tagline">AI / full stack / creative technology</p>
+    <p class="text">Have a project, an engineering challenge, or an opportunity to discuss? Send me a message.</p>
+    <div class="portfolio-contact-links">
+        <a class="fleet-btn primary js-main-focus" href={`mailto:${portfolio.contact.email}`}>{portfolio.contact.email}</a>
+        {Object.values(portfolio.contact.social).map(social => <a class="fleet-btn secondary" href={social.url} target="_blank" rel="noopener noreferrer">{social.name} ↗</a>)}
+        <a class="fleet-btn secondary" href="/resume/">Read the complete portfolio</a>
+    </div>
+    <p class="portfolio-note">This interactive portfolio is inspired by <a href="https://bruno-simon.com/" target="_blank" rel="noopener noreferrer">Bruno Simon</a> and his <a href="https://github.com/brunosimon/folio-2025" target="_blank" rel="noopener noreferrer">folio-2025</a>. Career details and project content are my own.</p>
+</>}
