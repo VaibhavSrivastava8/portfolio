@@ -43,7 +43,7 @@ export class Reveal
         this.game.ticker.events.on('tick', this.update, 10)
 
         // Early embarkation listener
-        this.earlyEmbark = false
+        this.earlyEmbark = this.game.embarkRequested
         const earlyEmbarkBtn = document.querySelector('.js-landing-embark')
         if(earlyEmbarkBtn)
         {

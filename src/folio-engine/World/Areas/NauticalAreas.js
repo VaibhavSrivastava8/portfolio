@@ -98,7 +98,8 @@ export class NauticalAreas
         if(activeZone && (activeZone.modal || activeZone.menu) && this.game.overlay?.progress.value < 0.001)
         {
             this.nearProject = activeZone.id
-            this.showInteractionPrompt(`Press [E] to explore ${activeZone.name}`)
+            const touch = this.game.inputs.touchHelm?.enabled()
+            this.showInteractionPrompt(`${touch ? 'Explore' : 'Press [E] to explore'} ${activeZone.name}`)
         }
         else
         {

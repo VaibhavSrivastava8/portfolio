@@ -41,11 +41,6 @@ export class Pointer
             this.altKey = _event.altKey
             this.ctrlKey = _event.ctrlKey
             
-            this.delta.x = _event.clientX - this.current.x
-            this.delta.y = _event.clientY - this.current.y
-
-            this.current.x = _event.clientX
-            this.current.y = _event.clientY
             this.upcoming.x = _event.clientX
             this.upcoming.y = _event.clientY
         })
@@ -70,7 +65,6 @@ export class Pointer
 
         addEventListener('mouseup', (_event) =>
         {
-            _event.preventDefault()
 
             this.button = _event.button
             this.shiftKey = _event.shiftKey
@@ -84,7 +78,7 @@ export class Pointer
             // _event.preventDefault()
 
             this.mode = Pointer.MODE_TOUCH
-            this.upcomingTouches = [ ..._event.touches ]
+            this.upcomingTouches = [ ..._event.touches ].filter(touch => touch.target === this.element)
             
             // Calculate average
             let x = 0
@@ -98,11 +92,6 @@ export class Pointer
             x /= this.upcomingTouches.length
             y /= this.upcomingTouches.length
 
-            this.delta.x = x - this.current.x
-            this.delta.y = y - this.current.y
-
-            this.current.x = x
-            this.current.y = y
             this.upcoming.x = x
             this.upcoming.y = y
         }, { passive: true })
@@ -113,7 +102,7 @@ export class Pointer
 
             this.mode = Pointer.MODE_TOUCH
             this.upcomingDown = true
-            this.upcomingTouches = [ ..._event.touches ]
+            this.upcomingTouches = [ ..._event.touches ].filter(touch => touch.target === this.element)
 
             // Calculate average
             let x = 0
@@ -135,17 +124,21 @@ export class Pointer
 
         this.element.addEventListener('touchend', (_event) =>
         {
-            _event.preventDefault()
+            if(_event.cancelable) _event.preventDefault()
 
-            this.upcomingTouches = [ ..._event.touches ]
+            this.upcomingTouches = [ ..._event.touches ].filter(touch => touch.target === this.element)
 
-            if(this.upcomingTouches.length === 0 || this.upcomingTouches.length === 1)
-                this.upcomingDown = false
+            this.upcomingDown = this.upcomingTouches.length > 0
         })
 
         this.element.addEventListener('contextmenu', (_event) =>
         {
             _event.preventDefault()
+        })
+        this.element.addEventListener('touchcancel', () =>
+        {
+            this.upcomingTouches = []
+            this.upcomingDown = false
         })
     }
 
@@ -168,7 +161,7 @@ export class Pointer
                 {
                     const dX = this.upcomingTouches[i].clientX - this.upcomingTouches[j].clientX
                     const dY = this.upcomingTouches[i].clientY - this.upcomingTouches[j].clientY
-                    const distance = Math.sqrt(dX * dX, dY * dY)
+                    const distance = Math.hypot(dX, dY)
 
                     if(distance > maxDistance)
                         maxDistance = distance
@@ -215,7 +208,7 @@ export class Pointer
                 this.events.trigger('up')
         }
 
-        if(this.hasMoved)
+        if(this.hasMoved || this.pinch.distanceDelta !== 0)
             this.events.trigger('move')
     }
 }

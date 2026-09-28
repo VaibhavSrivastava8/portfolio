@@ -563,7 +563,7 @@ export class Player
         /**
          * Nipple
          */
-        if(this.game.inputs.nipple.active && this.game.inputs.nipple.progress > 0)
+        if(!this.game.inputs.touchHelm?.enabled() && this.game.inputs.nipple.active && this.game.inputs.nipple.progress > 0)
         {
             if(!this.game.view.focusPoint.isTracking)
             {
@@ -589,6 +589,11 @@ export class Player
                 this.accelerating *= -1
                 this.steering *= -1
             }
+        }
+        if(this.game.inputs.touchHelm?.active)
+        {
+            this.accelerating = this.game.inputs.touchHelm.throttle
+            this.steering = this.game.inputs.touchHelm.steering
         }
     }
 

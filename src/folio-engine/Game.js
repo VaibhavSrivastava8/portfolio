@@ -63,7 +63,11 @@ export class Game
             return Game.instance
 
         Game.instance = this
-
+        this.embarkRequested = false
+        document.querySelector('.js-landing-embark')?.addEventListener('click', () =>
+        {
+            this.embarkRequested = true
+        })
         this.init()
     }
 

@@ -42,8 +42,9 @@ export class Map
                 this.init()
 
             this.texture.update()
-            this.update(true)
             this.selection = null
+            this.element.querySelector('.is-selected')?.classList.remove('is-selected')
+            this.update(true)
             if(travel) travel.hidden = true
             setTimeout(() => this.layoutLabels(), 300)
         })
@@ -60,16 +61,19 @@ export class Map
         labels.forEach(label => label.style.translate = 'none')
         const bounds = this.element.getBoundingClientRect()
         const placed = []
+        const offsets = [[0, 0]]
+        for(let distance = 8; distance <= 96; distance += 8)
+            offsets.push([0, -distance], [0, distance], [-distance, 0], [distance, 0], [-distance, -distance], [distance, -distance], [-distance, distance], [distance, distance])
         labels.sort((a, b) => Number(a.parentElement.classList.contains('is-territory')) - Number(b.parentElement.classList.contains('is-territory')))
         for(const label of labels)
         {
             const rect = label.getBoundingClientRect()
-            for(const shift of [0, -8, 8, -16, 16, -24, 24, -32, 32, -40, 40, -48, 48, -56, 56])
+            for(const [dx, dy] of offsets)
             {
-                const candidate = { left: rect.left, right: rect.right, top: rect.top + shift, bottom: rect.bottom + shift }
-                if(candidate.top < bounds.top || candidate.bottom > bounds.bottom) continue
+                const candidate = { left: rect.left + dx, right: rect.right + dx, top: rect.top + dy, bottom: rect.bottom + dy }
+                if(candidate.left < bounds.left || candidate.right > bounds.right || candidate.top < bounds.top || candidate.bottom > bounds.bottom) continue
                 if(placed.some(other => candidate.left < other.right + 3 && candidate.right > other.left - 3 && candidate.top < other.bottom + 3 && candidate.bottom > other.top - 3)) continue
-                label.style.translate = `0 ${shift}px`
+                label.style.translate = `${dx}px ${dy}px`
                 placed.push(candidate)
                 break
             }
@@ -93,6 +97,13 @@ export class Map
 
     setTexture()
     {
+        // A deterministic colour grade keeps the captured geography exact.
+        const grade = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        grade.setAttribute('width', '0')
+        grade.setAttribute('height', '0')
+        grade.setAttribute('aria-hidden', 'true')
+        grade.innerHTML = '<defs><filter id="captains-chart-grade" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0.9 0.05 0.05 0 0.08  0.05 0.8 0.05 0 0.19  0.05 0.05 0.7 0 0.2  0 0 0 1 0"/></filter></defs>'
+        this.element.append(grade)
         this.texture = { element: this.element.querySelector('.js-texture') }
         this.texture.element.alt = 'Top-down photograph of the actual islands, terrain, water, and scenery'
         this.texture.element.addEventListener('load', () => this.texture.element.classList.add('is-visible'))
@@ -174,6 +185,7 @@ export class Map
             const portfolioStop = portfolioStops.find(stop => stop.anchor === item.respawnName)
             const isTerritory = ['spinosaurus', 'mosasaurus', 'sharks', 'kraken'].includes(item.respawnName)
             element.type = 'button'
+            element.dataset.destination = item.respawnName
             element.setAttribute('aria-label', 'Set course for ' + item.name.replace(/<[^>]*>/g, ' '))
             element.classList.add('location')
             if(item.category === 'cay')
@@ -211,7 +223,10 @@ export class Map
 
             element.addEventListener('click', () =>
             {
+                this.element.querySelector('.is-selected')?.classList.remove('is-selected')
+                element.classList.add('is-selected')
                 this.selection = { item, respawn }
+                this.updateRoute()
                 const travel = this.modal.element.querySelector('.js-chart-travel')
                 if(travel)
                 {
@@ -236,6 +251,24 @@ export class Map
         image.draggable = false
         image.src = '/ui/map/ship-topdown.png'
         this.player.element.querySelector('.ship-icon').append(image)
+        this.route = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        this.route.setAttribute('viewBox', '0 0 1000 1000')
+        this.route.setAttribute('aria-hidden', 'true')
+        this.route.classList.add('chart-route')
+        this.route.innerHTML = '<path fill="none" />'
+        this.routePath = this.route.querySelector('path')
+        this.element.append(this.route)
+    }
+
+    updateRoute()
+    {
+        if(!this.routePath) return
+        const destination = this.selection?.respawn.position || this.game.world.nauticalAreas.destination
+        this.route.toggleAttribute('hidden', !destination)
+        if(!destination) return
+        const from = this.worldToMap(this.game.player.position)
+        const to = this.worldToMap(destination)
+        this.routePath.setAttribute('d', `M ${from.x * 1000} ${from.y * 1000} L ${to.x * 1000} ${to.y * 1000}`)
     }
 
     setTelemetryHUD()
@@ -348,6 +381,7 @@ export class Map
 
             this.player.element.style.left = `${x}%`
             this.player.element.style.top = `${y}%`
+            this.updateRoute()
 
             // Update Telemetry HUD coords & waters
             if(this.telemetryHUD)

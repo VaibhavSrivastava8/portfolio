@@ -6,6 +6,7 @@ import Keyboard from './Keyboard.js'
 import { InteractiveButtons } from './InteractiveButtons.js'
 import { Wheel } from './Wheel.js'
 import { Nipple } from './Nipple.js'
+import { TouchHelm } from './TouchHelm.js'
 import ObservableSet from '../utilities/ObservableSet.js'
 
 export class Inputs
@@ -161,9 +162,11 @@ export class Inputs
         {
             if(this.mode !== Inputs.MODE_TOUCH)
                 return
+            if(this.touchHelm?.enabled()) return
                 
             this.nipple.updateFromPointer(this.pointer, action)
         })
+        this.touchHelm = new TouchHelm(this)
     }
 
     addActions(actions)

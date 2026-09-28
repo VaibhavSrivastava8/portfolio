@@ -628,8 +628,8 @@ export class View
 
     returnToShip(duration = 1.4)
     {
-        if(this.focusPoint.isTracking) return
-
+        this.focusPoint.isTracking = false
+        this.userOrbitTimeout = 0
         this.focusPoint.isReturning = true
 
         gsap.killTweensOf(this.focusPoint.position)
@@ -707,6 +707,7 @@ export class View
         this.toggleCameraMode = () =>
         {
             this.cameraControlMode = this.cameraControlMode === 'orbit' ? 'pan' : 'orbit'
+            if(this.cameraControlMode === 'pan') this.focusPoint.isTracking = false
             this.updateCameraUI()
         }
 
@@ -722,7 +723,7 @@ export class View
                     toggleBtn.setAttribute('aria-pressed', 'false')
                     toggleBtn.classList.add('is-orbit')
                     toggleBtn.classList.remove('is-pan')
-                    toggleBtn.setAttribute('title', 'Current: Left Click to Orbit 360°. Right Click to Pan. Press [C] to switch.')
+                    toggleBtn.setAttribute('title', 'Drag the sea to orbit. Use the thumb helm to sail on mobile. C switches view.')
                 }
                 else
                 {
@@ -731,7 +732,7 @@ export class View
                     toggleBtn.setAttribute('aria-pressed', 'true')
                     toggleBtn.classList.add('is-pan')
                     toggleBtn.classList.remove('is-orbit')
-                    toggleBtn.setAttribute('title', 'Current: Left Click to Pan Map. Right Click to Orbit. Press [C] to switch.')
+                    toggleBtn.setAttribute('title', 'Drag the sea to pan. Tap Ship to return. C switches view.')
                 }
             }
 
@@ -755,6 +756,7 @@ export class View
 
             domElement.addEventListener('mousedown', (e) =>
             {
+                if(e.target !== this.game.canvasElement) return
                 cancelReturn()
                 domElement.style.cursor = 'grabbing'
             })
@@ -783,6 +785,7 @@ export class View
             // Direct smooth mouse wheel zoom on canvas
             domElement.addEventListener('wheel', (event) =>
             {
+                if(event.target !== this.game.canvasElement) return
                 event.preventDefault()
                 cancelReturn()
                 const delta = Math.sign(event.deltaY)
@@ -905,11 +908,15 @@ export class View
                         }
                     }
 
-                    // Pinch zoom
-                    this.zoom.baseRatio += this.game.inputs.pointer.pinch.distanceDelta * 0.005
-                    this.zoom.baseRatio = clamp(this.zoom.baseRatio, 0, 1)
                 }
             }
+        })
+        // A symmetric pinch has no centroid movement, so it needs its own event.
+        this.game.inputs.pointer.events.on('pinch', () =>
+        {
+            if(this.mode !== View.MODE_DEFAULT || !this.game.inputs.filters.has('wandering')) return
+            cancelReturn()
+            this.zoom.baseRatio = clamp(this.zoom.baseRatio + this.game.inputs.pointer.pinch.distanceDelta * 0.005, 0, 1)
         })
     }
 
