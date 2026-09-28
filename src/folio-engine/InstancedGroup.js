@@ -40,7 +40,8 @@ export class InstancedGroup
                 mesh.localMatrix = _child.matrix
                 // mesh.localMatrix = _child.matrixWorld
                 
-                mesh.instance = new THREE.InstancedMesh(_child.geometry, _child.material, this.count)
+                mesh.instance = new THREE.InstancedMesh(_child.geometry, _child.material, Math.max(1, this.count))
+                mesh.instance.count = this.count
                 mesh.instance.name = _child.name
                 mesh.instance.castShadow = _child.castShadow
                 mesh.instance.receiveShadow = _child.receiveShadow

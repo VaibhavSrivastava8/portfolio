@@ -129,7 +129,7 @@ export class Game
         // Load and init RAPIER
         const rapierPromise = import('@dimforge/rapier3d-compat').then(async (RAPIER) =>
         {
-            await RAPIER.init({})
+            await RAPIER.init()
             return RAPIER
         })
 

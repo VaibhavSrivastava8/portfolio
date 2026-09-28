@@ -40,7 +40,6 @@ export class Rendering
     {
         this.renderer = new THREE.WebGPURenderer({
             canvas: this.game.canvasElement,
-            powerPreference: 'high-performance',
             // Prefer WebGPU; Three automatically falls back on older browsers.
             antialias: false
         })
