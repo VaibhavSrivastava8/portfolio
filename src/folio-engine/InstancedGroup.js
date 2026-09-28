@@ -42,6 +42,9 @@ export class InstancedGroup
                 
                 mesh.instance = new THREE.InstancedMesh(_child.geometry, _child.material, Math.max(1, this.count))
                 mesh.instance.count = this.count
+                if (this.count === 0) {
+                    mesh.instance.visible = false
+                }
                 mesh.instance.name = _child.name
                 mesh.instance.castShadow = _child.castShadow
                 mesh.instance.receiveShadow = _child.receiveShadow
