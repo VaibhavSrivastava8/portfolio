@@ -53,7 +53,8 @@ export class Whispers
     setFlames()
     {
         // Reveal buffer
-        this.revealArray = new Float32Array(this.count)
+        const safeCount = Math.max(1, this.count)
+        this.revealArray = new Float32Array(safeCount)
         this.revealBuffer = new THREE.StorageInstancedBufferAttribute(this.revealArray, 1)
         this.revealBufferNeedsUpdate = true
         
@@ -89,10 +90,11 @@ export class Whispers
         })()
 
         // Instanced mesh
-        this.flames = new THREE.InstancedMesh(beamGeometry, beamMaterial, this.count)
+        this.flames = new THREE.InstancedMesh(beamGeometry, beamMaterial, Math.max(1, this.count))
+        this.flames.count = this.count
         this.flames.renderOrder = 3
         this.flames.frustumCulled = false
-        this.flames.visible = true
+        this.flames.visible = this.count > 0
         this.flames.position.y = 0.25
         this.game.scene.children.splice(1, 0, this.flames)
     }

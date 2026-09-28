@@ -209,9 +209,10 @@ export class AchievementsArea extends Area
         // Glyphs
         {
             const count = this.game.achievements.globalProgress.totalCount
+            const safeCount = Math.max(1, count)
 
-            const positions = new Float32Array(count * 3)
-            const speeds = new Float32Array(count)
+            const positions = new Float32Array(safeCount * 3)
+            const speeds = new Float32Array(safeCount)
             
             for(let i = 0; i < count; i++)
             {
@@ -281,6 +282,7 @@ export class AchievementsArea extends Area
             mesh.position.y = 2
             mesh.position.z = this.pillar.position.z
             mesh.count = count
+            if (count === 0) mesh.visible = false
 
             this.game.scene.add(mesh)
             this.objects.hideable.push(mesh)

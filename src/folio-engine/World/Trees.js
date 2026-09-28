@@ -50,7 +50,9 @@ export class Trees
     setBodies()
     {
         this.game.materials.updateObject(this.modelParts.body)
-        this.bodies = new THREE.InstancedMesh(this.modelParts.body.geometry, this.modelParts.body.material, this.references.length)
+        this.bodies = new THREE.InstancedMesh(this.modelParts.body.geometry, this.modelParts.body.material, Math.max(1, this.references.length))
+        this.bodies.count = this.references.length
+        if (this.references.length === 0) this.bodies.visible = false
         this.bodies.instanceMatrix.setUsage(THREE.StaticDrawUsage)
         this.bodies.castShadow = true
         this.bodies.receiveShadow = true

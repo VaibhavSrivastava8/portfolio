@@ -193,14 +193,15 @@ export class Foliage
     
     setInstancedMesh()
     {
-        this.mesh = new THREE.InstancedMesh(this.geometry, this.material.instance, this.transformMatrices.length)
+        this.mesh = new THREE.InstancedMesh(this.geometry, this.material.instance, Math.max(1, this.transformMatrices.length))
         this.mesh.receiveShadow = true
         this.mesh.castShadow = true
         this.mesh.count = this.transformMatrices.length
+        if (this.transformMatrices.length === 0) this.mesh.visible = false
         this.mesh.frustumCulled = false
         this.game.scene.add(this.mesh)
 
-        this.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(this.mesh.count * 16), 16)
+        this.instanceMatrix = new THREE.InstancedBufferAttribute(new Float32Array(Math.max(1, this.mesh.count) * 16), 16)
         this.instanceMatrix.setUsage(THREE.StaticDrawUsage)
 
         let i = 0
