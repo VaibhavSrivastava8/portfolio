@@ -1,12 +1,13 @@
 // Cached water grid and A* routes. No raycasts, physics bodies, or render work.
 export class SeaNavigation
 {
-    constructor(obstacles, clearance = 3, bound = 108, spacing = 2)
+    constructor(obstacles, clearance = 3, bound = 108, spacing = 2, region = () => true)
     {
         this.obstacles = obstacles
         this.clearance = clearance
         this.bound = bound
         this.spacing = spacing
+        this.region = region
         this.size = Math.floor(bound * 2 / spacing) + 1
         this.water = new Uint8Array(this.size * this.size)
         for(let index = 0; index < this.water.length; index++)
@@ -20,7 +21,7 @@ export class SeaNavigation
 
     isWater(point)
     {
-        return Math.abs(point.x) <= this.bound && Math.abs(point.z) <= this.bound &&
+        return this.region(point) && Math.abs(point.x) <= this.bound && Math.abs(point.z) <= this.bound &&
             this.obstacles.every(island => Math.hypot(point.x - island.x, point.z - island.z) >= island.r + this.clearance - 1e-6)
     }
 

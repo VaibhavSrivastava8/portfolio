@@ -2,6 +2,10 @@ import * as THREE from 'three/webgpu'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { Game } from '../Game.js'
 import { SeaNavigation } from './SeaNavigation.js'
+import { CoastalGuardian } from './CoastalGuardian.js'
+import { SirenPack } from './SirenPack.js'
+import { createSirenVisual, poseSiren } from './SirenVisual.js'
+import { response } from '../utilities/sailing.js'
 
 // =============================================================================
 // ISLAND OBSTACLES & BOUNDARIES (All 25 Islands at 1.4x Scale)
@@ -127,8 +131,8 @@ export class Monsters
             this.setupKraken(),
             this.setupSharks(),
             this.setupSpinosaurus(),
+            this.setupSirens(),
             this.setupSkeletons(),
-            this.setupMermaid(),
             this.setupGhostCorsair()
         ])
     }
@@ -355,41 +359,89 @@ export class Monsters
         const gltf = await this.loadGLTF('/assets/monsters/spinosaurus.glb')
         if(!gltf) return
 
-        this.spino = gltf.scene
+        // Separate the animated model from navigation and terrain grounding.
+        this.spino = new THREE.Group()
         this.spino.name = 'spinosaurus'
-        // Proportionate semi-aquatic predator scale
-        this.spino.scale.set(0.68, 0.68, 0.68)
-        // Wading in shallow tidal lagoon surrounding Dinosaur Shallows
-        this.spino.position.set(-49, -0.55, -50)
-
-        this.preserveAuthenticMaterials(this.spino)
-
-        this.spinoTerritory = {
-            center: new THREE.Vector2(-49, -50),
-            innerRadius: 7.5,
-            outerRadius: 18.5,
-            speed: 3.8
-        }
-
-        this.spinoState = 'PATROL'
-        this.spinoPatrolAngle = 0
-        this.spinoDisengageTimer = 0
-        this.spinoDisengageAngle = 0
+        this.spinoVisual = gltf.scene
+        this.spinoVisual.scale.setScalar(0.68)
+        this.preserveAuthenticMaterials(this.spinoVisual)
+        this.spinoVisual.traverse(child =>
+        {
+            if(!child.isMesh) return
+            for(const material of Array.isArray(child.material) ? child.material : [child.material])
+            {
+                material.roughness = 0.95
+                material.metalness = 0
+                material.flatShading = true
+                material.needsUpdate = true
+            }
+        })
 
         if(gltf.animations && gltf.animations.length > 0)
         {
-            this.spinoMixer = new THREE.AnimationMixer(this.spino)
+            this.spinoMixer = new THREE.AnimationMixer(this.spinoVisual)
             this.spinoWalkAction = this.spinoMixer.clipAction(gltf.animations[0])
             this.spinoWalkAction.play()
             this.mixers.push(this.spinoMixer)
+            this.spinoMixer.update(0)
         }
-
+        this.spinoVisual.updateMatrixWorld(true)
+        const head = this.spinoVisual.getObjectByName('Bone_Head_15_12')
+        this.spinoHead = head
+        this.spinoStrikePosition = new THREE.Vector3()
+        const tail = this.spinoVisual.getObjectByName('Bone_Tail1_Blend_7_4')
+        if(head && tail)
+        {
+            const axis = head.getWorldPosition(new THREE.Vector3()).sub(tail.getWorldPosition(new THREE.Vector3()))
+            this.spinoVisual.rotation.y -= Math.atan2(axis.x, axis.z)
+            this.spinoVisual.updateMatrixWorld(true)
+        }
+        const bounds = new THREE.Box3().setFromObject(this.spinoVisual, true)
+        const center = bounds.getCenter(new THREE.Vector3())
+        this.spinoVisual.position.set(-center.x, -bounds.min.y, -center.z)
+        this.spino.add(this.spinoVisual)
+        // Measure the whole animated tail sweep once, not just the bind pose.
+        let bodyRadius = 0, footOffset = 0
+        for(let sample = 0; sample < 16; sample++)
+        {
+            if(this.spinoMixer) this.spinoMixer.setTime(gltf.animations[0].duration * sample / 16)
+            this.spino.updateMatrixWorld(true)
+            this.spino.traverse(child => { if(child.isSkinnedMesh) child.skeleton.update() })
+            const pose = new THREE.Box3().setFromObject(this.spino, true)
+            bodyRadius = Math.max(bodyRadius, Math.hypot(
+                Math.max(Math.abs(pose.min.x), Math.abs(pose.max.x)),
+                Math.max(Math.abs(pose.min.z), Math.abs(pose.max.z))))
+            footOffset = Math.min(footOffset, pose.min.y)
+        }
+        this.spinoVisual.position.y -= footOffset
+        if(this.spinoMixer) this.spinoMixer.setTime(0)
+        const clearance = Math.max(5, bodyRadius + 0.6)
+        this.spinoGuardian = new CoastalGuardian(ISLAND_OBSTACLES, { x: -49, z: -50 }, clearance)
+        const spawn = this.spinoGuardian.waypoint(this.spinoGuardian.patrolAngle)
+        const safe = this.spinoGuardian.navigation.nearestWater(spawn)
+        Object.assign(this.spino.position, this.spinoGuardian.navigation.point(safe))
+        this.spino.position.y = this.game.terrain?.getElevation(this.spino.position.x, this.spino.position.z) ?? -2
+        this.spinoState = 'PATROL'
         this.group.add(this.spino)
     }
 
     // =========================================================================
     // 5. SKELETON PIRATES — CURSED SHIPWRECK COVE LOOKOUTS (-66, 32)
     // =========================================================================
+    async setupSirens()
+    {
+        const gltf = await this.loadGLTF('/assets/monsters/siren-reef.glb')
+        if(!gltf) return
+        this.sirenPack = new SirenPack(ISLAND_OBSTACLES)
+        this.sirenVisuals = this.sirenPack.members.map((member, index) =>
+        {
+            const visual = createSirenVisual(gltf.scene, index)
+            visual.root.position.set(member.position.x, member.position.y, member.position.z)
+            this.group.add(visual.root)
+            return visual
+        })
+    }
+
     async setupSkeletons()
     {
         const gltf = await this.loadGLTF('/assets/monsters/skeleton.glb')
@@ -427,56 +479,6 @@ export class Monsters
 
             this.group.add(skelMesh)
         }
-    }
-
-    // =========================================================================
-    // 6. SIREN / MERMAID — CORAL REEF SANCTUARY (Coral Lagoon: 54, -56)
-    // =========================================================================
-    async setupMermaid()
-    {
-        const gltf = await this.loadGLTF('/assets/monsters/mermaid.glb')
-        if(!gltf) return
-
-        this.mermaid = gltf.scene
-        this.mermaid.name = 'mermaid'
-        // Natural human siren proportion (1.15 scale)
-        this.mermaid.scale.set(1.15, 1.15, 1.15)
-        // Perched gracefully on the lagoon rocks at Coral Lagoon (51.0, 0.85, -53.5)
-        this.mermaid.position.set(51.0, 0.85, -53.5)
-        this.mermaid.rotation.set(-0.12, -Math.PI * 0.65, 0.05)
-
-        this.preserveAuthenticMaterials(this.mermaid)
-
-        // Hide translucent bubble material
-        this.mermaid.traverse((child) =>
-        {
-            if(child.isMesh)
-            {
-                const mats = Array.isArray(child.material) ? child.material : (child.material ? [child.material] : [])
-                mats.forEach(m => {
-                    if(m.name === 'mat24' || m.opacity < 0.5)
-                    {
-                        m.visible = false
-                    }
-                })
-            }
-        })
-
-        // Soft mystical cyan beacon light around the siren
-        const sirenLight = new THREE.PointLight(0x38bdf8, 2.5, 14)
-        sirenLight.position.set(51.0, 1.6, -53.5)
-        this.group.add(sirenLight)
-        this.sirenLight = sirenLight
-
-        this.mermaidPerchPos = new THREE.Vector3(51.0, 0.85, -53.5)
-        this.mermaidTerritory = {
-            center: new THREE.Vector2(54, -56),
-            radius: 26
-        }
-        this.mermaidState = 'PERCHED'
-        this.mermaidCircleAngle = Math.random() * Math.PI * 2
-
-        this.group.add(this.mermaid)
     }
 
     // =========================================================================
@@ -531,10 +533,9 @@ export class Monsters
             if(this.mosa) this.mosa.visible = false
             if(this.kraken) this.kraken.visible = false
             if(this.spino) this.spino.visible = false
+            if(this.sirenVisuals) this.sirenVisuals.forEach(siren => { siren.root.visible = false })
             if(this.sharkPack) this.sharkPack.forEach(s => { if(s.mesh) s.mesh.visible = false })
             if(this.skeletons) this.skeletons.forEach(s => { if(s.mesh) s.mesh.visible = false })
-            if(this.mermaid) this.mermaid.visible = false
-            if(this.sirenLight) this.sirenLight.visible = false
             if(this.ghostCorsair) this.ghostCorsair.visible = false
             return
         }
@@ -852,97 +853,51 @@ export class Monsters
         }
 
         // ---------------------------------------------------------------------
-        // 4. SPINOSAURUS — TIDAL MANGROVE WADING & CLAW SWIPE
+        // 4. SPINOSAURUS — GROUNDED SHALLOW-WATER TERRITORIAL GUARDIAN
         // ---------------------------------------------------------------------
         if(this.spino && boatPos)
         {
             const distSpinoCam = viewerPos ? viewerPos.distanceTo(this.spino.position) : 999
             this.spino.visible = distSpinoCam < maxDrawDist
 
-            const distSpinoCenter = Math.hypot(boatPos.x - this.spinoTerritory.center.x, boatPos.z - this.spinoTerritory.center.y)
-            const insideSpinoTerritory = distSpinoCenter < this.spinoTerritory.outerRadius + 8.0 && !insideSafeHarbor
-            const distToSpino = Math.hypot(boatPos.x - this.spino.position.x, boatPos.z - this.spino.position.z)
-
-            if(this.spinoDisengageTimer > 0)
+            const motion = this.spinoGuardian.update(this.spino.position, boatPos, delta, insideSafeHarbor)
+            this.spinoState = motion.state
+            let angle = motion.heading - this.spino.rotation.y
+            while(angle > Math.PI) angle -= Math.PI * 2
+            while(angle < -Math.PI) angle += Math.PI * 2
+            this.spino.rotation.y += angle * response(3, delta)
+            // Feet rest on the same terrain height used by the physics floor.
+            this.spino.position.y = this.game.terrain?.getElevation(this.spino.position.x, this.spino.position.z) ?? -2
+            const windup = motion.state === 'WINDUP' ? Math.sin((1 - this.spinoGuardian.timer / 0.85) * Math.PI) * 0.08 : 0
+            this.spinoVisual.rotation.x += (windup - this.spinoVisual.rotation.x) * response(8, delta)
+            if(this.spinoMixer) this.spinoMixer.timeScale = motion.speed / 2
+            if(motion.attack && this.spinoHead)
             {
-                this.spinoDisengageTimer -= delta
-            }
-
-            let targetX, targetZ, moveSpeed
-
-            if(insideSpinoTerritory)
-            {
-                if(this.spinoDisengageTimer > 0)
-                {
-                    this.spinoDisengageAngle += 0.5 * delta
-                    const orbitRadius = 14.0
-                    targetX = this.spinoTerritory.center.x + Math.sin(this.spinoDisengageAngle) * orbitRadius
-                    targetZ = this.spinoTerritory.center.y + Math.cos(this.spinoDisengageAngle) * orbitRadius
-                    moveSpeed = 3.2
-                }
-                else
-                {
-                    targetX = boatPos.x
-                    targetZ = boatPos.z
-                    moveSpeed = 3.8
-
-                    if(distToSpino < 4.8 && this.spinoDisengageTimer <= 0)
-                    {
-                        this.attackShip(8, 'Spinosaurus swipe!', false, this.spino.position)
-                        this.spinoDisengageTimer = 4.2
-                        this.spinoDisengageAngle = Math.atan2(this.spino.position.x - this.spinoTerritory.center.x, this.spino.position.z - this.spinoTerritory.center.y)
-                    }
-                }
-            }
-            else
-            {
-                this.spinoPatrolAngle += 0.25 * delta
-                targetX = this.spinoTerritory.center.x + Math.sin(this.spinoPatrolAngle) * 14.0
-                targetZ = this.spinoTerritory.center.y + Math.cos(this.spinoPatrolAngle) * 14.0
-                moveSpeed = 2.4
-            }
-
-            // Smooth rotation towards target with deadzone
-            const toTarget = new THREE.Vector2(targetX - this.spino.position.x, targetZ - this.spino.position.z)
-            if(toTarget.length() > 1.0)
-            {
-                const targetAngle = Math.atan2(toTarget.x, toTarget.y)
-                let diffAngle = targetAngle - this.spino.rotation.y
-                while(diffAngle > Math.PI) diffAngle -= Math.PI * 2
-                while(diffAngle < -Math.PI) diffAngle += Math.PI * 2
-                this.spino.rotation.y += diffAngle * 2.2 * delta
-            }
-
-            const nextX = this.spino.position.x + Math.sin(this.spino.rotation.y) * moveSpeed * delta
-            const nextZ = this.spino.position.z + Math.cos(this.spino.rotation.y) * moveSpeed * delta
-            const distToIslandCenter = Math.hypot(nextX - this.spinoTerritory.center.x, nextZ - this.spinoTerritory.center.y)
-
-            // Strictly confined to shallow tidal water ring [innerRadius, outerRadius]
-            if(distToIslandCenter >= this.spinoTerritory.innerRadius && distToIslandCenter <= this.spinoTerritory.outerRadius)
-            {
-                this.spino.position.x = nextX
-                this.spino.position.z = nextZ
-            }
-            else
-            {
-                // Deflect around tidal sandbanks
-                const angleOut = Math.atan2(this.spino.position.x - this.spinoTerritory.center.x, this.spino.position.z - this.spinoTerritory.center.y)
-                const clampedR = Math.max(this.spinoTerritory.innerRadius + 0.5, Math.min(this.spinoTerritory.outerRadius - 0.5, distToIslandCenter))
-                this.spino.position.x = this.spinoTerritory.center.x + Math.sin(angleOut) * clampedR
-                this.spino.position.z = this.spinoTerritory.center.y + Math.cos(angleOut) * clampedR
-            }
-
-            this.spino.position.y = -0.55 + Math.sin(time * 2.5) * 0.03
-
-            if(this.spinoMixer)
-            {
-                this.spinoMixer.timeScale = moveSpeed / 2.8
+                this.spino.updateMatrixWorld(true)
+                this.spinoHead.getWorldPosition(this.spinoStrikePosition)
+                const reach = Math.hypot(this.spinoStrikePosition.x - boatPos.x, this.spinoStrikePosition.z - boatPos.z)
+                if(reach < this.spinoGuardian.shipRadius + 1.5)
+                    this.attackShip(8, 'Spinosaurus territorial swipe!', false, this.spinoStrikePosition)
             }
         }
 
         // ---------------------------------------------------------------------
         // 5. GHOST PIRATE CORSAIR — CURSED SHIPWRECK COVE PATROL & CANNONS
         // ---------------------------------------------------------------------
+        if(this.sirenPack && this.sirenVisuals && boatPos)
+        {
+            const strikes = this.sirenPack.update(boatPos, delta, insideSafeHarbor)
+            for(const strike of strikes)
+                this.attackShip(4, 'Siren lunge!', false, strike)
+            this.sirenVisuals.forEach((visual, index) =>
+            {
+                const member = this.sirenPack.members[index]
+                const visible = Math.hypot(viewerPos.x - member.position.x, viewerPos.z - member.position.z) < 65
+                visual.root.visible = visible
+                if(visible) poseSiren(visual, member, this.sirenPack.clock, delta)
+            })
+        }
+
         if(this.ghostCorsair && boatPos)
         {
             const distCorsairCam = viewerPos ? viewerPos.distanceTo(this.ghostCorsair.position) : 999
@@ -1067,68 +1022,6 @@ export class Monsters
                     while(diffAngle < -Math.PI) diffAngle += Math.PI * 2
                     skel.mesh.rotation.y += diffAngle * 1.5 * delta
                     skel.mesh.rotation.x = 0
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------------
-        // 7. SIREN / MERMAID — CORAL SANCTUARY GUIDANCE
-        // ---------------------------------------------------------------------
-        if(this.mermaid && boatPos)
-        {
-            const distMermaidCam = viewerPos ? viewerPos.distanceTo(this.mermaid.position) : 999
-            this.mermaid.visible = distMermaidCam < maxDrawDist
-            if(this.sirenLight)
-            {
-                this.sirenLight.visible = this.mermaid.visible
-            }
-
-            const distToTerritoryCenter = Math.hypot(
-                boatPos.x - this.mermaidTerritory.center.x,
-                boatPos.z - this.mermaidTerritory.center.y
-            )
-
-            if(distToTerritoryCenter < this.mermaidTerritory.radius)
-            {
-                this.mermaidState = 'SWIMMING'
-                this.mermaidCircleAngle += 0.85 * delta
-                const circleRadius = 9.0
-                const targetX = boatPos.x + Math.sin(this.mermaidCircleAngle) * circleRadius
-                const targetZ = boatPos.z + Math.cos(this.mermaidCircleAngle) * circleRadius
-
-                const toTarget = new THREE.Vector2(targetX - this.mermaid.position.x, targetZ - this.mermaid.position.z)
-                const targetAngle = Math.atan2(toTarget.x, toTarget.y)
-                let diffAngle = targetAngle - this.mermaid.rotation.y
-                while(diffAngle > Math.PI) diffAngle -= Math.PI * 2
-                while(diffAngle < -Math.PI) diffAngle += Math.PI * 2
-                this.mermaid.rotation.y += diffAngle * 3.2 * delta
-
-                this.mermaid.position.x += (targetX - this.mermaid.position.x) * 2.8 * delta
-                this.mermaid.position.z += (targetZ - this.mermaid.position.z) * 2.8 * delta
-
-                const targetY = 0.35 + Math.sin(time * 2.5) * 0.12
-                this.mermaid.position.y += (targetY - this.mermaid.position.y) * 3 * delta
-
-                this.mermaid.rotation.x += (0.12 - this.mermaid.rotation.x) * 3 * delta
-                this.mermaid.rotation.z = Math.sin(time * 4) * 0.12
-
-                if(this.sirenLight)
-                {
-                    this.sirenLight.position.copy(this.mermaid.position)
-                    this.sirenLight.position.y += 0.95
-                }
-            }
-            else
-            {
-                this.mermaidState = 'PERCHED'
-                this.mermaid.position.x += (this.mermaidPerchPos.x - this.mermaid.position.x) * 2.0 * delta
-                this.mermaid.position.z += (this.mermaidPerchPos.z - this.mermaid.position.z) * 2.0 * delta
-                this.mermaid.position.y = this.mermaidPerchPos.y + Math.sin(time * 1.8) * 0.02
-                this.mermaid.rotation.set(-0.12 + Math.sin(time * 1.5) * 0.02, -Math.PI * 0.65, Math.sin(time * 1.8) * 0.03)
-
-                if(this.sirenLight)
-                {
-                    this.sirenLight.position.set(this.mermaidPerchPos.x, this.mermaidPerchPos.y + 0.95, this.mermaidPerchPos.z)
                 }
             }
         }
@@ -1373,13 +1266,17 @@ export class Monsters
         {
             newTerritory = '⚠️ Serpent\'s Deep — Great White Shark Shoals'
         }
-        else if(Math.hypot(boatPos.x - (-49), boatPos.z - (-50)) < 26)
+        else if(Math.hypot(boatPos.x - (-49), boatPos.z - (-50)) < 33)
         {
             newTerritory = '⚠️ Dinosaur Shallows — Spinosaurus Tidal Basin'
         }
+        else if(Math.hypot(boatPos.x - (-22), boatPos.z - (-27)) < 23)
+        {
+            newTerritory = '⚠️ Siren\'s Ridge — Keep clear of the reef'
+        }
         else if(Math.hypot(boatPos.x - 54, boatPos.z - (-56)) < 24)
         {
-            newTerritory = '🧜‍♀️ Coral Lagoon — Siren\'s Sanctuary'
+            newTerritory = '🏝️ Coral Lagoon — Quiet Sanctuary'
         }
         else if(Math.hypot(boatPos.x - (-123), boatPos.z - 123) < 28)
         {

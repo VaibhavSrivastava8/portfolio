@@ -3,13 +3,15 @@ import { readFileSync } from 'node:fs'
 import { runInNewContext } from 'node:vm'
 import test from 'node:test'
 import { SeaNavigation } from './SeaNavigation.js'
+import { CoastalGuardian } from './CoastalGuardian.js'
+import { response } from '../utilities/sailing.js'
 
 // Load the actual state machine without the browser-only Game/render imports.
 // Model loading, visuals, and hull effects are stubbed; movement is not.
 const source = readFileSync(new URL('./Monsters.js', import.meta.url), 'utf8')
     .replace(/^import[^\r\n]*[\r\n]+/gm, '').replace('export class Monsters', 'class Monsters')
 const { Monsters, ISLAND_OBSTACLES } = runInNewContext(`${source}\n({ Monsters, ISLAND_OBSTACLES })`, {
-    SeaNavigation, THREE: { Vector2: class {
+    SeaNavigation, CoastalGuardian, response, THREE: { Vector2: class {
         constructor(x, y) { this.x = x; this.y = y }
         length() { return Math.hypot(this.x, this.y) }
     } },
@@ -75,4 +77,54 @@ test('returns to patrol when the ship leaves the territory', () =>
     Object.assign(monsters.game.physicalVehicle.position, { x: 0, z: 0 })
     tick(monsters, 20)
     assert.equal(monsters.mosaState, 'PATROL')
+})
+
+test('Spino actual update grounds the model, synchronizes gait, and clears all 25 islands', () =>
+{
+    const monsters = simulation({ x: 0, z: 0 })
+    monsters.mosa = null
+    monsters.game.terrain = { getElevation: () => -2 }
+    monsters.spinoGuardian = new CoastalGuardian(ISLAND_OBSTACLES, { x: -49, z: -50 }, 7.9)
+    const nav = monsters.spinoGuardian.navigation
+    monsters.spino = { position: nav.point(nav.nearestWater(monsters.spinoGuardian.waypoint(monsters.spinoGuardian.patrolAngle))), rotation: { y: 0 } }
+    monsters.spinoVisual = { rotation: { x: 0 } }
+    monsters.spinoMixer = { timeScale: 0 }
+    let minX = Infinity, maxX = -Infinity, moving = 0, resting = 0
+    for(let frame = 0; frame < 180 * 60; frame++)
+    {
+        const before = { ...monsters.spino.position }
+        monsters.game.ticker.elapsed += 1 / 60
+        monsters.update()
+        assert.ok(nav.isWater(monsters.spino.position))
+        assert.ok(nav.isClear(before, monsters.spino.position))
+        assert.equal(monsters.spino.position.y, -2)
+        minX = Math.min(minX, monsters.spino.position.x)
+        maxX = Math.max(maxX, monsters.spino.position.x)
+        if(monsters.spinoMixer.timeScale > 0.01) moving++
+        else resting++
+    }
+    assert.ok(maxX - minX > 20, 'large animated body must still have room to roam')
+    assert.ok(moving > 0 && resting > 0, 'gait stops when the animal rests')
+    assert.equal(monsters.strikes, 0)
+})
+
+test('Spino damage requires head-to-hull reach, not merely an attack-state timer', () =>
+{
+    for(const inReach of [false, true])
+    {
+        const monsters = simulation({ x: -63, z: -78 })
+        monsters.mosa = null
+        monsters.game.terrain = { getElevation: () => -2 }
+        monsters.spinoGuardian = new CoastalGuardian(ISLAND_OBSTACLES, { x: -49, z: -50 }, 7.9)
+        monsters.spinoGuardian.transition('WINDUP', 0)
+        monsters.spino = { position: { x: -50, z: -74 }, rotation: { y: 0 }, updateMatrixWorld() {} }
+        monsters.spinoVisual = { rotation: { x: 0 } }
+        monsters.spinoStrikePosition = {}
+        monsters.spinoHead = { getWorldPosition(target) {
+            Object.assign(target, { x: inReach ? -61 : -49, z: -78, y: 1 })
+        } }
+        monsters.update()
+        assert.equal(monsters.spinoState, 'RETREAT')
+        assert.equal(monsters.strikes, inReach ? 1 : 0)
+    }
 })

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "test": "node --test src/folio-engine/View.test.js src/folio-engine/utilities/sailing.test.js src/folio-engine/World/SeaNavigation.test.js src/folio-engine/World/Monsters.test.js",
+    "test": "node --test src/folio-engine/View.test.js src/folio-engine/utilities/sailing.test.js src/folio-engine/World/SeaNavigation.test.js src/folio-engine/World/Monsters.test.js src/folio-engine/World/CoastalGuardian.test.js src/folio-engine/World/SirenPack.test.js",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -51,6 +51,7 @@
     "esbuild": true
   },
   "devDependencies": {
-    "stylus": "^0.64.0"
+    "stylus": "^0.64.0",
+    "meshoptimizer": "^1.1.1"
   }
 }
