@@ -9,6 +9,7 @@ import { Inputs } from './Inputs/Inputs.js'
 import { alea } from 'seedrandom'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { Line2 } from 'three/examples/jsm/lines/webgpu/Line2.js'
+import { response } from './utilities/sailing.js'
 
 CameraControls.install( { THREE: THREE } )
 
@@ -24,6 +25,7 @@ export class View
         this.game = Game.getInstance()
         
         this.mode = View.MODE_DEFAULT
+        this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
         this.position = new THREE.Vector3()
         this.delta = new THREE.Vector3()
         this.idealRatio = idealRatio
@@ -179,7 +181,7 @@ export class View
         ]
         this.game.inputs.events.on('actionStart', (action) =>
         {
-            if(focusActionsNames.indexOf(action.name) !== -1)
+            if(focusActionsNames.indexOf(action.name) !== -1 && !this.focusPoint.isReturning)
                 this.focusPoint.isTracking = true
         })
 
@@ -322,8 +324,8 @@ export class View
         this.zoom.baseRatio = 0.5
         this.zoom.ratio = this.zoom.baseRatio
         this.zoom.smoothedRatio = this.zoom.baseRatio
-        this.zoom.speedAmplitude = - 0.4
-        this.zoom.speedEdge = { min: 5, max: 40 }
+        this.zoom.speedAmplitude = - 0.10
+        this.zoom.speedEdge = { min: 5, max: 20 }
         this.zoom.sensitivity = 0.08
         this.zoom.toggle = 0
         this.zoom.toggleLast = -1
@@ -628,25 +630,15 @@ export class View
 
     returnToShip(duration = 1.4)
     {
-        this.focusPoint.isTracking = false
+        this.focusPoint.isTracking = true
         this.userOrbitTimeout = 0
         this.focusPoint.isReturning = true
 
         gsap.killTweensOf(this.focusPoint.position)
         gsap.killTweensOf(this.spherical)
 
-        gsap.to(this.focusPoint.position, {
-            x: this.focusPoint.trackedPosition.x,
-            z: this.focusPoint.trackedPosition.z,
-            duration: duration,
-            ease: 'power2.inOut',
-            onComplete: () =>
-            {
-                this.focusPoint.isTracking = true
-                this.focusPoint.isReturning = false
-                this.updateCameraUI?.()
-            }
-        })
+        // Keep tracking the moving ship throughout the return, not its old position.
+        if(this.reducedMotion.matches) duration = 0
 
         // Return spherical angle and pitch behind vessel looking forward
         let targetTheta = Math.PI
@@ -657,13 +649,18 @@ export class View
         }
 
         gsap.to(this.spherical, {
-            theta: targetTheta,
+            theta: this.spherical.theta + smallestAngle(this.spherical.theta, targetTheta),
             phi: Math.PI * 0.33,
             duration: duration,
-            ease: 'power2.out'
+            ease: 'power2.out',
+            onComplete: () =>
+            {
+                this.focusPoint.isReturning = false
+                this.updateCameraUI?.()
+            }
         })
 
-        // Return zoom to standard sailing distance (16)
+        // Return zoom to the standard sailing view.
         if(Math.abs(this.zoom.baseRatio - 0.5) > 0.05)
         {
             gsap.to(this.zoom, {
@@ -683,7 +680,7 @@ export class View
             { name: 'cameraModeToggle', categories: [ 'intro', 'wandering' ], keys: [ 'Keyboard.KeyC', 'Keyboard.c' ] },
             { name: 'cameraRecenter', categories: [ 'intro', 'wandering' ], keys: [ 'Keyboard.KeyR', 'Keyboard.r' ] },
             { name: 'cameraOrbitLeft', categories: [ 'intro', 'wandering' ], keys: [ 'Keyboard.KeyQ', 'Keyboard.q', 'Keyboard.BracketLeft' ] },
-            { name: 'cameraOrbitRight', categories: [ 'intro', 'wandering' ], keys: [ 'Keyboard.KeyE', 'Keyboard.e', 'Keyboard.BracketRight' ] },
+            { name: 'cameraOrbitRight', categories: [ 'intro', 'wandering' ], keys: [ 'Keyboard.BracketRight' ] },
         ])
 
         const domElement = this.game.domElement
@@ -782,14 +779,12 @@ export class View
                 this.updateCameraUI()
             })
 
-            // Direct smooth mouse wheel zoom on canvas
+            // Wheel.roll already updates zoom through the input system.
             domElement.addEventListener('wheel', (event) =>
             {
                 if(event.target !== this.game.canvasElement) return
                 event.preventDefault()
                 cancelReturn()
-                const delta = Math.sign(event.deltaY)
-                this.zoom.baseRatio = clamp(this.zoom.baseRatio - delta * 0.08, 0, 1)
             }, { passive: false })
         }
 
@@ -961,7 +956,10 @@ export class View
             this.focusPoint.position.z += magnetStrength * magnetDelta.z * this.game.ticker.delta
         }
 
-        const easing = remap(this.focusPoint.easing, 0, 1, 1, this.game.ticker.delta * 10)
+        // Snap only across teleports; ordinary movement stays gently damped.
+        if(this.focusPoint.isTracking && !this.focusPoint.isReturning && this.focusPoint.smoothedPosition.distanceTo(this.focusPoint.position) > 24)
+            this.focusPoint.smoothedPosition.copy(this.focusPoint.position)
+        const easing = remap(this.focusPoint.easing, 0, 1, 1, response(8, this.game.ticker.delta))
         
         const newSmoothFocusPoint = this.focusPoint.smoothedPosition.clone().lerp(this.focusPoint.position, easing)
 
@@ -1002,23 +1000,17 @@ export class View
             const zoomSpeedRatio = smoothstep(focusPointSpeed, this.zoom.speedEdge.min, this.zoom.speedEdge.max)
             this.zoom.ratio = this.zoom.baseRatio
 
-            if(this.focusPoint.isTracking && this.game.quality.level === 0)
+            if(this.focusPoint.isTracking && !this.landingMode && !this.reducedMotion.matches)
                 this.zoom.ratio += this.zoom.speedAmplitude * zoomSpeedRatio
 
-            this.zoom.smoothedRatio = lerp(this.zoom.smoothedRatio, this.zoom.ratio, this.game.ticker.delta * 10)
-        }
-
-        // Ensure camera follows ship movement
-        if(this.game.player && (this.game.player.accelerating !== 0 || this.game.player.steering !== 0))
-        {
-            this.focusPoint.isTracking = true
+            this.zoom.smoothedRatio = lerp(this.zoom.smoothedRatio, this.zoom.ratio, response(5, this.game.ticker.delta))
         }
 
         // Naval Chase Camera: Smoothly trail behind the ship's stern
-        if(this.focusPoint.isTracking && this.game.physicalVehicle && this.game.player)
+        if(this.focusPoint.isTracking && !this.focusPoint.isReturning && !this.cinematic.active && !this.landingMode && this.game.physicalVehicle && this.game.player)
         {
             const forward = this.game.physicalVehicle.forward
-            const speed = this.game.physicalVehicle.xzSpeed || this.game.physicalVehicle.speed || 0
+            const speed = Math.hypot(this.game.physicalVehicle.velocity.x, this.game.physicalVehicle.velocity.z) / Math.max(this.game.ticker.deltaScaled, 0.0001)
             const isSailingForward = speed > 1.2 && (this.game.physicalVehicle.goingForward || this.game.player.accelerating > 0)
 
             if(this.userOrbitTimeout > 0)
@@ -1032,9 +1024,9 @@ export class View
                 // Target angle directly behind the ship's stern in Three.js spherical coords
                 const targetTheta = Math.atan2(-forward.x, -forward.z)
                 const angleDiff = smallestAngle(this.spherical.theta, targetTheta)
-                // Relaxed, gentle follow speed (0.95 rad/s) gives natural camera lag so ship turns on screen first
-                const followSpeed = 0.95
-                this.spherical.theta += angleDiff * Math.min(1, this.game.ticker.delta * followSpeed)
+                // The ship starts its turn before the camera gently catches up.
+                const followSpeed = this.reducedMotion.matches ? 0 : 1.25
+                this.spherical.theta += angleDiff * response(followSpeed, this.game.ticker.delta)
             }
         }
 
@@ -1063,7 +1055,8 @@ export class View
         this.roll.speed += this.roll.velocity
         this.roll.value += this.roll.speed * this.game.ticker.deltaScaled
         this.roll.speed *= 1 - this.roll.damping * this.game.ticker.deltaScaled
-        this.defaultCamera.rotation.z += this.roll.value
+        if(!this.reducedMotion.matches)
+            this.defaultCamera.rotation.z += clamp(this.roll.value, -0.035, 0.035)
 
         // Cinematic
         if(this.cinematic.progress > 0)

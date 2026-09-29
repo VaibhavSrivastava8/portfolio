@@ -4,6 +4,7 @@ import { remapClamp, smallestAngle } from './utilities/maths.js'
 import * as THREE from 'three/webgpu'
 import { Inputs } from './Inputs/Inputs.js'
 import { clamp } from 'three/src/math/MathUtils.js'
+import { sailingLookAhead, response } from './utilities/sailing.js'
 
 export class Player
 {
@@ -27,6 +28,7 @@ export class Player
         this.basePosition = this.position.clone()
         this.position2 = new THREE.Vector2(this.position.x, this.position.z)
         this.rotationY = 0
+        this.cameraLead = new THREE.Vector3()
 
         this.setSounds()
         this.setInputs()
@@ -603,9 +605,12 @@ export class Player
         this.position.copy(this.game.physicalVehicle.position)
         this.position2 = new THREE.Vector2(this.position.x, this.position.z)
         
-        // View > Focus point with gentle forward look-ahead
-        const forwardOffset = this.game.physicalVehicle.forward.clone().multiplyScalar(2.2)
-        this.game.view.focusPoint.trackedPosition.copy(this.position).add(forwardOffset)
+        // Look along actual motion, not the rudder: no camera swing while turning at rest.
+        const lead = sailingLookAhead(this.game.physicalVehicle.velocity, this.game.ticker.deltaScaled)
+        const follow = response(4, this.game.ticker.delta)
+        this.cameraLead.x += (lead.x - this.cameraLead.x) * follow
+        this.cameraLead.z += (lead.z - this.cameraLead.z) * follow
+        this.game.view.focusPoint.trackedPosition.copy(this.position).add(this.cameraLead)
         this.game.view.focusPoint.trackedPosition.y = 0.8
 
         // View > Speed lines

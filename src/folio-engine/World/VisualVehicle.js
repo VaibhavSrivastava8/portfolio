@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu'
 import { Game } from '../Game.js'
+import { response } from '../utilities/sailing.js'
 import { Track } from '../Tracks.js'
 import { Trails } from '../Trails.js'
 import { remapClamp } from '../utilities/maths.js'
@@ -467,19 +468,20 @@ export class VisualVehicle
         // Nautical ship rocking & banking
         if(this.shipVisual)
         {
-            const t = this.game.ticker.elapsed * 0.003
+            const t = this.game.ticker.elapsed * 0.45
             // In model space (with rotation.order = 'YXZ' and rotation.y = PI * 0.5):
             // rotation.x is PITCH (bow dipping up/down)
             // rotation.z is ROLL (banking port/starboard)
             const waveRoll = Math.sin(t * 3.0 + physicalVehicle.position.x * 0.15) * 0.03
             const wavePitch = Math.cos(t * 2.2 + physicalVehicle.position.z * 0.15) * 0.02
             // Authentic sailing bank when steering and bow lift when catching wind
-            const turnBank = this.game.player.steering * 0.075
-            const sailLift = (this.game.player.accelerating || 0) * 0.035
+            const turnBank = Math.max(-0.065, Math.min(0.065, physicalVehicle.chassis.physical.body.angvel().y * 0.055))
+            const sailLift = (this.game.player.accelerating || 0) * 0.025
+            const ease = response(5, this.game.ticker.delta)
             this.shipVisual.rotation.order = 'YXZ'
             this.shipVisual.rotation.y = Math.PI * 0.5
-            this.shipVisual.rotation.x = wavePitch + sailLift
-            this.shipVisual.rotation.z = waveRoll + turnBank
+            this.shipVisual.rotation.x += (wavePitch + sailLift - this.shipVisual.rotation.x) * ease
+            this.shipVisual.rotation.z += (waveRoll + turnBank - this.shipVisual.rotation.z) * ease
 
             // Natural wave heave keeping hull submerged in water without deck drowning
             const waveHeave = Math.sin(t * 2.5 + physicalVehicle.position.x * 0.2) * 0.035

@@ -2,6 +2,7 @@ import * as THREE from 'three/webgpu'
 import { Game } from '../Game.js'
 import { Events } from '../Events.js'
 import { lerp, remap, remapClamp, smallestAngle } from '../utilities/maths.js'
+import { hullVelocity, rudderVelocity, response } from '../utilities/sailing.js'
 
 export class PhysicsVehicle
 {
@@ -468,7 +469,7 @@ export class PhysicsVehicle
 
     updatePrePhysics()
     {
-        const deltaScaled = this.game.ticker.deltaScaled
+        const deltaScaled = Math.min(this.game.ticker.deltaScaled, 1 / 20)
 
         // 1. Propulsion & Engine Forces
         let engineForce = 0
@@ -512,7 +513,6 @@ export class PhysicsVehicle
             {
                 const accel = this.game.player.accelerating
                 const isBraking = this.game.player.braking
-                const speed = this.speed || 0
 
                 // A. Archimedean Buoyancy & Metacentric Righting Stability
                 const targetWaterY = (this.game.water?.surfaceElevation || 0) + 0.65
@@ -526,8 +526,8 @@ export class PhysicsVehicle
                 }
 
                 // Upright stability (Roll & Pitch Damping)
-                const targetAngvelX = angvel.x * Math.max(0, 1.0 - 0.25 * Math.min(deltaScaled, 2.0))
-                const targetAngvelZ = angvel.z * Math.max(0, 1.0 - 0.25 * Math.min(deltaScaled, 2.0))
+                const targetAngvelX = angvel.x * (1 - response(5, deltaScaled))
+                const targetAngvelZ = angvel.z * (1 - response(5, deltaScaled))
 
                 // Righting moment if tilted
                 if(this.upward && this.upward.y < 0.98)
@@ -538,64 +538,21 @@ export class PhysicsVehicle
 
                 // B. Mathematically Calculated Rudder Turning Authority
                 const forwardSpeed = linvel.x * this.forward.x + linvel.z * this.forward.z
-                const isReversing = (accel < -0.1) || (!this.goingForward && speed > 0.6)
-                const rudderDir = isReversing ? -1.0 : 1.0
+                const targetAngvelY = rudderVelocity(angvel.y, steerInput, forwardSpeed, accel, deltaScaled)
 
-                let targetAngvelY = angvel.y
-                if(Math.abs(steerInput) > 0.02)
-                {
-                    // Docking/channel turn authority at low speed + speed-dependent flow across rudder
-                    const dockingAuthority = 0.85
-                    const flowBonus = Math.min(Math.abs(forwardSpeed) * 0.06, 0.75)
-                    const totalAuthority = dockingAuthority + flowBonus
-
-                    const maxTurnRate = 1.45 // rad/s (~83 deg/sec)
-                    const turnRate = steerInput * rudderDir * maxTurnRate * totalAuthority
-                    const responsiveness = 0.28 * Math.min(deltaScaled, 2.0)
-                    targetAngvelY = THREE.MathUtils.lerp(targetAngvelY, turnRate, Math.min(1.0, responsiveness))
-                }
-                else
-                {
-                    // Active yaw stabilization: settles vessel on current heading smoothly
-                    targetAngvelY *= Math.max(0, 1.0 - 0.30 * Math.min(deltaScaled, 2.0))
-                }
-
-                body.setAngvel({ x: targetAngvelX, y: targetAngvelY, z: targetAngvelZ }, true)
+                const righted = body.angvel()
+                body.setAngvel({
+                    x: targetAngvelX + righted.x - angvel.x,
+                    y: targetAngvelY,
+                    z: targetAngvelZ + righted.z - angvel.z
+                }, true)
 
                 // C. Direct Hydrodynamic Propulsive Hull Thrust
                 if(this.forward)
                 {
-                    const boost = this.game.player.boosting ? 1.75 : 1.0
-                    const maxForwardSpeed = this.game.player.boosting ? 26.0 : 15.0
-                    const maxReverseSpeed = 6.5
-
-                    if(!isBraking && accel !== 0)
-                    {
-                        const canAccelerate = (accel > 0 && forwardSpeed < maxForwardSpeed) || (accel < 0 && forwardSpeed > -maxReverseSpeed)
-                        if(canAccelerate)
-                        {
-                            const thrustMag = (accel > 0 ? 30.0 * boost : 18.0) * this.chassis.mass * Math.min(deltaScaled, 1.5)
-                            body.applyImpulse({
-                                x: this.forward.x * accel * thrustMag,
-                                y: 0,
-                                z: this.forward.z * accel * thrustMag
-                            }, true)
-                        }
-                    }
-
-                    // Water Drag & Anchor Braking
-                    const dragFactor = isBraking ? 0.38 : (accel === 0 ? 0.04 : 0.005)
-                    const dragForce = forwardSpeed * dragFactor * Math.min(deltaScaled, 1.5)
-
-                    // D. Keel Lateral Resistance (Prevents sideways ice-skate sliding)
-                    const sideSpeed = this.sideward ? (linvel.x * this.sideward.x + linvel.z * this.sideward.z) : 0
-                    const sideCorrection = sideSpeed * 0.45 * Math.min(deltaScaled, 2.0)
-
-                    body.setLinvel({
-                        x: linvel.x - this.forward.x * dragForce - (this.sideward ? this.sideward.x * sideCorrection : 0),
-                        y: linvel.y,
-                        z: linvel.z - this.forward.z * dragForce - (this.sideward ? this.sideward.z * sideCorrection : 0)
-                    }, true)
+                    // Read AFTER buoyancy impulses, so the velocity write doesn't erase them.
+                    body.setLinvel(hullVelocity(body.linvel(), this.forward, this.sideward,
+                        accel, this.game.player.boosting, isBraking, deltaScaled), true)
                 }
             }
         }

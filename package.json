@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "test": "node --test src/folio-engine/View.test.js src/folio-engine/utilities/sailing.test.js src/folio-engine/World/SeaNavigation.test.js src/folio-engine/World/Monsters.test.js",
     "preview": "astro preview",
     "astro": "astro"
   },

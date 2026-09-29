@@ -1,6 +1,7 @@
 import * as THREE from 'three/webgpu'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { Game } from '../Game.js'
+import { SeaNavigation } from './SeaNavigation.js'
 
 // =============================================================================
 // ISLAND OBSTACLES & BOUNDARIES (All 25 Islands at 1.4x Scale)
@@ -239,6 +240,10 @@ export class Monsters
         this.mosaCurrentSpeed = 5.0
         this.mosaTargetY = -1.2
         this.mosaPassTarget = null
+        this.mosaNavigation = new SeaNavigation(ISLAND_OBSTACLES)
+        this.mosaRoute = []
+        this.mosaRouteGoal = null
+        this.mosaRouteTimer = 0
 
         this.group.add(this.mosa)
     }
@@ -629,13 +634,27 @@ export class Monsters
                 targetElev = -1.0
             }
 
-            // Smooth forward steering with island obstacle avoidance
-            const toTarget = new THREE.Vector2(targetX - this.mosa.position.x, targetZ - this.mosa.position.z)
-            if(toTarget.length() > 1.2)
+            // Follow an actual water channel instead of alternating tangents and
+            // shore push-outs between Danger Reef and the Abyssal Sentinel rocks.
+            const destination = { x: targetX, z: targetZ }
+            this.mosaRouteTimer -= delta
+            const goalMoved = !this.mosaRouteGoal || Math.hypot(targetX - this.mosaRouteGoal.x, targetZ - this.mosaRouteGoal.z) > 3
+            const routeBlocked = this.mosaRoute.length && !this.mosaNavigation.isClear(this.mosa.position, this.mosaRoute[0])
+            if(routeBlocked || (this.mosaRouteTimer <= 0 && (goalMoved || !this.mosaRoute.length)))
             {
-                let targetAngle = Math.atan2(toTarget.x, toTarget.y)
-                targetAngle = this.avoidObstacles(this.mosa.position, targetAngle, 4.5)
-
+                if(!this.mosaNavigation.isWater(this.mosa.position))
+                {
+                    const index = this.mosaNavigation.nearestWater(this.mosa.position)
+                    if(index >= 0) Object.assign(this.mosa.position, this.mosaNavigation.point(index))
+                }
+                this.mosaRoute = this.mosaNavigation.route(this.mosa.position, destination)
+                this.mosaRouteGoal = destination
+                this.mosaRouteTimer = 0.6
+            }
+            this.mosaCurrentSpeed += (targetSpeed - this.mosaCurrentSpeed) * 2.5 * delta
+            const targetAngle = this.mosaNavigation.follow(this.mosa.position, this.mosaRoute, this.mosaCurrentSpeed * delta)
+            if(targetAngle !== null)
+            {
                 let diffAngle = targetAngle - this.mosa.rotation.y
                 while(diffAngle > Math.PI) diffAngle -= Math.PI * 2
                 while(diffAngle < -Math.PI) diffAngle += Math.PI * 2
@@ -645,13 +664,6 @@ export class Monsters
                 const turnRate = diffAngle * 2.8
                 this.mosa.rotation.z += (-turnRate * 0.42 - this.mosa.rotation.z) * 4.0 * delta
             }
-
-            this.mosaCurrentSpeed += (targetSpeed - this.mosaCurrentSpeed) * 2.5 * delta
-            this.mosa.position.x += Math.sin(this.mosa.rotation.y) * this.mosaCurrentSpeed * delta
-            this.mosa.position.z += Math.cos(this.mosa.rotation.y) * this.mosaCurrentSpeed * delta
-
-            // Guarantee zero island clipping
-            this.clampOutsideIslands(this.mosa.position, 3.0)
 
             this.mosaTargetY += (targetElev - this.mosaTargetY) * 2.5 * delta
             this.mosa.position.y = this.mosaTargetY + Math.sin(time * 3) * 0.08
