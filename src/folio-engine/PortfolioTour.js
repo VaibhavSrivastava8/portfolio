@@ -1,10 +1,10 @@
 import * as THREE from 'three/webgpu'
-import { portfolioStops } from '../data/portfolioStops.js'
+import { portfolioStops, firstProjectStop } from '../data/portfolioStops.js'
 
 // The portfolio uses the live islands, not a second set of preview artwork.
 export function focusPortfolioStop(game, id)
 {
-    const stop = portfolioStops.find(stop => stop.id === (id === 'projects' ? 'pdfretype' : id) || stop.menu === id)
+    const stop = portfolioStops.find(stop => stop.id === (id === 'projects' ? firstProjectStop?.id : id) || stop.menu === id)
         || portfolioStops[0]
     game.view.portfolioStop = stop.id
     const landmark = game.world?.flagshipLandmarks?.landmarks.find(item => item.id === stop.id)

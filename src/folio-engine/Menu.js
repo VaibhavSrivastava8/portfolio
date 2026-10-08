@@ -3,6 +3,7 @@ import { Game } from './Game.js'
 import { Inputs } from './Inputs/Inputs.js'
 import { Tabs } from './Tabs.js'
 import { focusPortfolioStop } from './PortfolioTour.js'
+import { firstProjectStop } from '../data/portfolioStops.js'
 
 export class Menu
 {
@@ -264,7 +265,7 @@ export class Menu
             return
         if(item.name !== 'settings' && !this.game.world?.nauticalAreas?.canInspect(item.name))
         {
-            this.game.world?.nauticalAreas?.setDestination(item.name === 'projects' ? 'pdfretype' : item.name)
+            this.game.world?.nauticalAreas?.setDestination(item.name === 'projects' ? firstProjectStop?.id : item.name)
             if(this.state === Menu.OPEN || this.state === Menu.OPENING) this.close()
             return
         }

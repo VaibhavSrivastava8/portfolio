@@ -142,6 +142,7 @@ export const portfolio = {
   "projects": [
     {
       "id": "pdfretype",
+      "enabled": false,
       "title": "PDF Retype",
       "category": "Document intelligence",
       "description": "Document OCR and reconstruction for turning scanned PDFs and images into editable Word documents, with a focus on preserving layout, tables, and typography.",
@@ -156,6 +157,7 @@ export const portfolio = {
     },
     {
       "id": "kms",
+      "enabled": false,
       "title": "Keep Me Stable",
       "category": "Community & wellbeing",
       "description": "An anonymous-first mental health and peer support platform with mood tracking, community chat, and sentiment-aware moderation.",
@@ -260,6 +262,9 @@ export const portfolio = {
     }
   ]
 }
+
+// Keep paused projects above so their content can be restored by changing enabled.
+portfolio.projects = portfolio.projects.filter(project => project.enabled !== false)
 
 export const sections = [
     { id: 'home', label: 'About', preview: 'home' },

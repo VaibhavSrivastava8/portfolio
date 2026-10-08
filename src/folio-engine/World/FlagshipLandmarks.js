@@ -12,9 +12,9 @@ export class FlagshipLandmarks
 
         this.landmarks = []
 
-        this.createPDFRetypeLandmark()
-        this.createKeepMeStableLandmark()
-        this.createHiveLandmark()
+        if(portfolioStops.some(stop => stop.id === 'pdfretype')) this.createPDFRetypeLandmark()
+        if(portfolioStops.some(stop => stop.id === 'kms')) this.createKeepMeStableLandmark()
+        if(portfolioStops.some(stop => stop.id === 'hive')) this.createHiveLandmark()
         this.createPortfolioBeacons()
         this.createIslandSigns()
 
