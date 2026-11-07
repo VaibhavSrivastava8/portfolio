@@ -8,7 +8,7 @@ export const portfolio = {
   "location": "India",
   "locationLink": "https://www.google.com/maps/place/india",
   "description": "AI/LLM Engineer & Full Stack Developer",
-  "summary": "I build intelligent systems that think, adapt, and scale. From architecting AI agent pipelines with LangChain and RAG to designing emergent digital civilizations powered by LLMs — I work at the intersection of artificial intelligence and full-stack engineering. Currently leading IT & software infrastructure at The Guardian Chronicle, with 4+ years of experience shipping production systems across Python, TypeScript, Flutter, and cloud platforms.",
+  "summary": "I build intelligent systems that think, adapt, and scale. From architecting AI agent pipelines with LangChain and RAG to designing emergent digital systems — I work at the intersection of artificial intelligence and full-stack engineering. Currently architecting enterprise platforms, AI engines, and internal software at The Guardian Chronicle, with 4+ years of experience shipping production systems across Python, TypeScript, Node.js, React, Flutter, and cloud platforms.",
   "avatarUrl": "/portfolio/me.jpeg",
   "skills": [
     "LangChain",
@@ -74,21 +74,21 @@ export const portfolio = {
   "work": [
     {
       "company": "The Guardian Chronicle",
-      "location": "Remote",
-      "title": "IT Head — Software, Infrastructure & Admin",
-      "start": "2025",
+      "location": "Ranchi, India / Hybrid",
+      "title": "Lead Software Engineer & Systems Architect",
+      "start": "Feb 2026",
       "end": "Present",
-      "description": "Managing complete IT operations including software development, infrastructure, and administration. Overseeing tech strategy, system architecture, and team workflows across the organization.",
+      "description": "Architected and engineered enterprise internal platforms: Dockerized ERPNext/Frappe HR across 9 microservices, standalone PySide6 payroll automation engine, autonomous AI newsroom publishing platform (Chronicle Press), cross-platform Flutter e-paper mobile app, and automated PRGI/GST compliance pipelines.",
       "href": "",
       "logoUrl": ""
     },
     {
       "company": "Jaiinfoway",
       "location": "Ranchi, India",
-      "title": "Software Development Engineer",
-      "start": "Oct 2025",
+      "title": "AI Technical Lead (promoted from Software Engineer)",
+      "start": "Sep 2025",
       "end": "Feb 2026",
-      "description": "Built AI-driven applications using LangChain, RAG, MCP, and Strands Agents. Created Node.js microservices, integrated LLM workflows, and automated pipelines with custom agent architectures.",
+      "description": "Promoted to AI Technical Lead. Architected and containerized the core enterprise AI agent platform for IntelliBooks (intellibooks.io) using Docker, Kubernetes, and Model Context Protocol (MCP). Engineered multi-agent LLM pipelines with LangChain and LangGraph connecting to enterprise data warehouses with sub-second RAG retrieval.",
       "href": "",
       "logoUrl": ""
     },
@@ -98,7 +98,7 @@ export const portfolio = {
       "title": "Software Development Engineer",
       "start": "Mar 2022",
       "end": "May 2025",
-      "description": "Developed full-stack web applications using PHP (Laravel/Yii) and React.js with RESTful APIs. Built scalable backend services in Node.js/Express, transitioning to Nest.js for modular architecture. Led frontend-backend integration across multiple client projects.",
+      "description": "Developed full-stack web applications using PHP (Laravel/Yii2), Node.js, NestJS, and React.js with RESTful APIs and real-time WebSockets. Shipped platforms for 10,000+ users including SmartBus360 and SkySea Holidays, reducing technical debt by 40%.",
       "href": "",
       "logoUrl": ""
     },
@@ -108,7 +108,7 @@ export const portfolio = {
       "title": "Network Engineer",
       "start": "Aug 2021",
       "end": "Jan 2022",
-      "description": "Designed and implemented network infrastructure. Managed upgrades, expansions, and user support for connectivity across the organization.",
+      "description": "Designed and maintained enterprise network infrastructure, routing protocols, and systems reliability for 100+ active users, cutting downtime by 20%.",
       "href": "",
       "logoUrl": ""
     }
@@ -142,7 +142,6 @@ export const portfolio = {
   "projects": [
     {
       "id": "pdfretype",
-      "enabled": false,
       "title": "PDF Retype",
       "category": "Document intelligence",
       "description": "Document OCR and reconstruction for turning scanned PDFs and images into editable Word documents, with a focus on preserving layout, tables, and typography.",
